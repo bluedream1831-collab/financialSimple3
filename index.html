@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v20 輸入框強化版)</title>
+    <title>ETF 現金流試算 (v21 完整版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 -->
@@ -16,8 +16,8 @@
             --primary-color: #198754;
             --highlight-bg: #fffde7;
             --bg-color: #f8f9fa;
-            --input-bg: #f8f9fa; /* 輸入框背景色 */
-            --input-border: #ced4da; /* 輸入框邊框色 */
+            --input-bg: #f8f9fa; 
+            --input-border: #ced4da; 
         }
 
         body { 
@@ -25,10 +25,9 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #333;
             font-size: 14px;
-            padding-bottom: 60px; /* 預留底部合計欄空間 */
+            padding-bottom: 60px; 
         }
 
-        /* 容器設定 */
         .container-fluid { padding-left: 0; padding-right: 0; max-width: 800px; margin: 0 auto; }
 
         /* --- 頂部導航 --- */
@@ -68,17 +67,17 @@
             font-size: 13px; text-align: center;
             border-bottom: 2px solid #ccc;
             white-space: nowrap;
-            position: sticky; top: 0; /* 讓標題稍微黏住 */
+            position: sticky; top: 0;
         }
 
         .custom-table td {
-            padding: 6px 4px; /* 增加一點點內距讓輸入框好點 */
+            padding: 6px 4px;
             vertical-align: middle;
             border-bottom: 1px solid #eee;
-            height: 46px; /* 稍微增高一點點以容納明顯的輸入框 */
+            height: 46px;
         }
 
-        /* 黃底 (本月配息) */
+        /* 黃底 */
         .highlight-row { background-color: var(--highlight-bg) !important; }
 
         /* ETF 名稱區塊 */
@@ -97,27 +96,25 @@
         .badge-m { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; } 
         .badge-q { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-        /* --- 🌟 關鍵修改：輸入框顯眼化 --- */
+        /* 輸入框顯眼化 */
         .input-enhanced {
             width: 100%; 
             text-align: right;
-            border: 1px solid var(--input-border); /* 明顯的邊框 */
-            border-radius: 4px; /* 圓角 */
-            padding: 4px 6px; /* 舒適的內距 */
+            border: 1px solid var(--input-border);
+            border-radius: 4px;
+            padding: 4px 6px;
             font-size: 14px; font-weight: 700; color: #333;
-            background-color: var(--input-bg); /* 淺灰背景，區分輸入區 */
+            background-color: var(--input-bg);
             transition: all 0.2s ease-in-out;
-            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* 微微內陰影 */
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);
         }
-        /* 點擊時的特效 */
         .input-enhanced:focus {
-            background-color: #fff; /* 聚焦變全白 */
+            background-color: #fff;
             border-color: var(--primary-color);
             outline: none; 
-            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25); /* 綠色光暈 */
+            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25);
         }
         
-        /* 試算金額 */
         .amount-cell { text-align: right; padding-right: 8px !important; }
         .amount-text { font-size: 15px; font-weight: 800; color: var(--primary-color); letter-spacing: 0.5px; }
 
@@ -134,7 +131,6 @@
         }
         .total-amount { font-size: 18px; font-weight: bold; color: #76ff03; }
 
-        /* 列印時才顯示標題 */
         .print-only-header { display: none; }
 
         @media print {
@@ -309,7 +305,7 @@
                 </div>
                 <div class="modal-body small">
                     <ul class="ps-3 mb-0">
-                        <li class="mb-2"><strong>輸入框優化</strong>：現在輸入框有明顯的灰色背景，點擊後會發出綠光，更容易辨識。</li>
+                        <li class="mb-2"><strong>記憶月份</strong>：系統會自動記住您最後瀏覽的月份。</li>
                         <li class="mb-1"><strong>黃底</strong>：代表本月有領息的季配 ETF。</li>
                         <li class="mb-1"><strong>股數</strong>：連動所有月份，改一次全部更新。</li>
                         <li class="mb-1"><strong>配息</strong>：每月獨立輸入。</li>
@@ -326,13 +322,22 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const { createApp, reactive, ref, computed, onMounted } = Vue;
+    const { createApp, reactive, ref, computed, onMounted, watch } = Vue;
 
     createApp({
         setup() {
-            const currentMonth = ref(new Date().getMonth() + 1);
+            // --- 核心邏輯：記憶月份 ---
+            const savedMonth = localStorage.getItem('etf_user_last_month');
+            const currentMonth = ref(savedMonth ? parseInt(savedMonth) : new Date().getMonth() + 1);
+
+            // 監聽月份變化，隨時存檔
+            watch(currentMonth, (newVal) => {
+                localStorage.setItem('etf_user_last_month', newVal);
+            });
+
             const fileInput = ref(null);
 
+            // ETF 清單設定
             const etfConfig = [
                 { id: '0056', name: '元大高股息', freq: 'Q', months: [2,5,8,11] },
                 { id: '00720B', name: '元大投債', freq: 'Q', months: [2,5,8,11] },
@@ -356,6 +361,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
+            // 預設股數 (更新 00891 為 12000)
             const defaultShares = {
                 '0056': 6000, 
                 '00713': 3038, 
@@ -364,7 +370,7 @@
                 '00772B': 6369, 
                 '00850': 1000, 
                 '00878': 7000, 
-                '00891': 12029,
+                '00891': 12000, 
                 '00915': 5000, 
                 '00929': 3000, 
                 '00934': 1000, 
@@ -385,8 +391,8 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v19_mobile_perfect (資料庫通用)
-                const savedShares = localStorage.getItem('etf_shares_v19');
+                // Key: v21 (新版本 key)
+                const savedShares = localStorage.getItem('etf_shares_v21');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -394,7 +400,7 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v19');
+                const savedDps = localStorage.getItem('etf_dps_v21');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
@@ -403,11 +409,11 @@
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v19', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v21', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v19', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v21', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -498,7 +504,7 @@
                     shares: sharesData.value,
                     dps: dpsData.value,
                     timestamp: new Date().toISOString(),
-                    version: 'v19'
+                    version: 'v21'
                 };
                 const jsonString = JSON.stringify(backup, null, 2);
                 const blob = new Blob([jsonString], { type: "application/json" });
