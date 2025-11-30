@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETF 現金流試算 (含匯入匯出備份)</title>
+    <title>ETF 現金流試算 (預設0+說明書)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 (CSS) -->
@@ -56,9 +56,13 @@
         }
         .total-amount { font-size: 1.4rem; font-weight: bold; }
 
-        /* 摘要 Modal 表格 */
+        /* Modal 通用 */
         .summary-table th { background-color: #198754; color: white; }
         .summary-row-current { background-color: #e8f5e9; font-weight: bold; }
+        
+        .modal-body h5 { color: #198754; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
+        .modal-body ul { padding-left: 20px; margin-bottom: 0; }
+        .modal-body li { margin-bottom: 8px; }
 
         /* 列印設定 */
         @media print {
@@ -86,27 +90,39 @@
                 <i class="fas fa-chart-bar"></i> 年度總覽
             </button>
             
-            <!-- 功能選單 -->
-            <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-cog"></i> 功能 / 備份
+            <!-- 使用說明 -->
+            <button class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#helpModal">
+                <i class="fas fa-book"></i> 說明
+            </button>
+            
+            <!-- 報表按鈕 -->
+            <button class="btn btn-outline-success btn-sm" @click="exportCSV">
+                <i class="fas fa-file-csv"></i> 匯出
+            </button>
+            <button class="btn btn-outline-dark btn-sm" @click="printPage">
+                <i class="fas fa-print"></i> 列印
+            </button>
+            
+            <!-- 清除功能 (下拉選單) -->
+            <button class="btn btn-outline-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="fas fa-eraser"></i> 清除
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><h6 class="dropdown-header">報表功能</h6></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="exportCSV"><i class="fas fa-file-csv me-2"></i>匯出當月報表 (Excel)</a></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="printPage"><i class="fas fa-print me-2"></i>列印 / 轉 PDF</a></li>
-                
+                <li><h6 class="dropdown-header">僅清除金額 (保留股數)</h6></li>
+                <li>
+                    <a class="dropdown-item" href="#" @click.prevent="clearMonthDPS">
+                        <i class="fas fa-calendar-day me-2"></i>清除「{{ currentMonth }}月」配息
+                    </a>
+                </li>
                 <li><hr class="dropdown-divider"></li>
-                <li><h6 class="dropdown-header">資料備份與還原</h6></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="backupDataJSON"><i class="fas fa-file-export me-2"></i>匯出備份檔 (.json)</a></li>
-                <li><a class="dropdown-item" href="#" @click.prevent="triggerImport"><i class="fas fa-file-import me-2"></i>匯入備份檔</a></li>
-                
-                <li><hr class="dropdown-divider"></li>
-                <li><a class="dropdown-item text-danger" href="#" @click.prevent="resetAll"><i class="fas fa-trash-alt me-2"></i>重置所有資料</a></li>
+                <li>
+                    <a class="dropdown-item text-danger fw-bold" href="#" @click.prevent="clearAnnualDPS">
+                        <i class="fas fa-calendar-alt me-2"></i>清除「整年度」配息
+                        <div class="text-muted small ps-4 fw-normal">1~12月金額全歸零</div>
+                    </a>
+                </li>
             </ul>
         </div>
-        
-        <!-- 隱藏的檔案上傳輸入框，供匯入使用 -->
-        <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
     </div>
 
     <!-- 月份選擇列 -->
@@ -230,6 +246,48 @@
         </div>
     </div>
 
+    <!-- 使用說明 Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-light">
+                    <h5 class="modal-title fw-bold"><i class="fas fa-book-open me-2"></i>操作說明</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <h5>1. 顯示邏輯 (領息月)</h5>
+                    <ul>
+                        <li>此工具採<strong>「現金入帳月份」</strong>制。</li>
+                        <li><strong>月配 ETF (綠標)</strong>：每個月都會顯示。</li>
+                        <li><strong>季配 ETF (黃底)</strong>：只有在錢進來的月份才會顯示，其餘月份自動隱藏。</li>
+                    </ul>
+
+                    <h5>2. 資料輸入</h5>
+                    <ul>
+                        <li><strong>持有股數</strong>：系統已預設您的持股，修改一次，<strong>全年度連動更新</strong>。</li>
+                        <li><strong>預估配息</strong>：預設為 0，請依照該月公告輸入。各月份<strong>獨立設定</strong>，互不影響。</li>
+                    </ul>
+
+                    <h5>3. 清除功能 (重要！)</h5>
+                    <ul>
+                        <li><strong>清除「X月」配息</strong>：只把該月份的配息金額歸零。</li>
+                        <li><strong>清除「整年度」配息</strong>：把 1~12 月的金額全歸零。</li>
+                        <li><span class="text-danger fw-bold">注意：</span>上述清除功能<strong>皆會保留您的持有股數</strong>，請放心使用。</li>
+                    </ul>
+                    
+                    <h5>4. 匯出與列印</h5>
+                    <ul>
+                        <li><strong>年度總覽</strong>：點擊上方黃色按鈕，查看整年現金流。</li>
+                        <li><strong>匯出 Excel</strong>：將當月報表下載為 CSV。</li>
+                    </ul>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <!-- Bootstrap JS -->
@@ -241,9 +299,8 @@
     createApp({
         setup() {
             const currentMonth = ref(new Date().getMonth() + 1);
-            const fileInput = ref(null);
 
-            // 1. 設定檔 (維持移除00945B)
+            // 1. 設定檔 (維持無 00945B)
             const etfConfig = [
                 { id: '0056', name: '元大高股息', freq: 'Q', months: [2,5,8,11] },
                 { id: '00720B', name: '元大投債', freq: 'Q', months: [2,5,8,11] },
@@ -268,7 +325,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
-            // 2. 預設股數
+            // 2. 預設股數 (維持截圖中的資料)
             const defaultShares = {
                 '0056': 6000, '00713': 3011, '00720B': 3000, '00740B': 1000,
                 '00772B': 6334, '00850': 1102, '00878': 7000, '00891': 12029,
@@ -277,15 +334,8 @@
                 '00795B': 1000, '00900': 1000, '009805': 1000, '00922': 2000
             };
 
-            // 3. 預設配息
-            const defaultDpsValues = {
-                '0056': 0.866, '00720B': 0.46, '00922': 1.25,
-                '00740B': 0.167, '00772B': 0.132, '00850': 0.7, '00878': 0.4,
-                '00891': 0.6, '00929': 0.09, '00934': 0.13, '00936': 0.055,
-                '00939': 0.072, '00940': 0.04, '00950B': 0.063, '00959B': 0.045,
-                '00900': 0.1, '00915': 0.72
-            };
-
+            // 3. 預設配息 (已移除，預設為 0)
+            
             const sharesData = ref({}); 
             const dpsData = ref({});
 
@@ -294,7 +344,8 @@
 
             // --- 資料讀寫 ---
             const loadData = () => {
-                const savedShares = localStorage.getItem('etf_shares_v6');
+                // 更新儲存 Key 到 v9_zero (確保沒有舊的預設配息干擾)
+                const savedShares = localStorage.getItem('etf_shares_v9_zero');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -302,23 +353,21 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v6');
+                const savedDps = localStorage.getItem('etf_dps_v9_zero');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
-                    for(let m=1; m<=12; m++) {
-                        dpsData.value[m] = { ...defaultDpsValues };
-                    }
+                    // 不做任何預填，讓它保持空白(0)
                     saveDps();
                 }
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v6', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v9_zero', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v6', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v9_zero', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -376,7 +425,7 @@
                 return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
             });
 
-            // --- 匯入匯出功能 ---
+            // --- 匯出與列印 ---
             const exportCSV = () => {
                 let csvContent = "\uFEFF"; 
                 csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
@@ -401,69 +450,28 @@
                 document.body.removeChild(link);
             };
 
-            // 匯出備份 (JSON)
-            const backupDataJSON = () => {
-                const backup = {
-                    shares: sharesData.value,
-                    dps: dpsData.value,
-                    timestamp: new Date().toISOString(),
-                    version: 'v6'
-                };
-                const jsonString = JSON.stringify(backup, null, 2);
-                const blob = new Blob([jsonString], { type: "application/json" });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `ETF_Backup_${new Date().toISOString().slice(0,10)}.json`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-
-            // 觸發匯入
-            const triggerImport = () => {
-                fileInput.value.click();
-            };
-
-            // 處理檔案匯入
-            const handleFileImport = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.shares && data.dps) {
-                            if(confirm("確定要匯入此備份檔嗎？\n目前的資料將會被覆蓋。")) {
-                                sharesData.value = data.shares;
-                                dpsData.value = data.dps;
-                                saveShares();
-                                saveDps();
-                                alert("匯入成功！");
-                            }
-                        } else {
-                            alert("錯誤：備份檔案格式不正確。");
-                        }
-                    } catch (err) {
-                        alert("錯誤：無法解析檔案，請確認檔案是否正確。");
-                    }
-                    // 清空 input 讓同個檔案可以再選一次
-                    event.target.value = '';
-                };
-                reader.readAsText(file);
-            };
-
             const printPage = () => {
                 window.print();
             };
 
-            const resetAll = () => {
-                if(confirm("警告：這將會刪除所有的股數和配息紀錄！\n確定要重置嗎？")) {
-                    localStorage.removeItem('etf_shares_v6');
-                    localStorage.removeItem('etf_dps_v6');
-                    alert("已重置，請重新整理網頁");
-                    location.reload();
+            // --- 清除功能 (股數保留) ---
+            
+            // 1. 清除本月配息
+            const clearMonthDPS = () => {
+                if(confirm(`確定要清除「${currentMonth.value}月」的所有配息金額嗎？\n\n(您的持有股數會保留)`)) {
+                    dpsData.value[currentMonth.value] = {};
+                    saveDps();
+                }
+            };
+
+            // 2. 清除整年配息
+            const clearAnnualDPS = () => {
+                if(confirm("確定要清除「整年度 (1~12月)」所有的配息金額嗎？\n\n(您的「持有股數」會保留，不會被刪除)")) {
+                    for(let m=1; m<=12; m++) {
+                        dpsData.value[m] = {};
+                    }
+                    saveDps();
+                    alert("已清除所有配息金額 (股數已保留)");
                 }
             };
 
@@ -476,8 +484,7 @@
                 filteredList, isHighlight, saveShares, saveDps,
                 calculateAmount, totalAmount,
                 yearlySummary, yearlyTotal,
-                exportCSV, backupDataJSON, triggerImport, handleFileImport, fileInput,
-                printPage, resetAll
+                exportCSV, printPage, clearMonthDPS, clearAnnualDPS
             };
         }
     }).mount('#app');
