@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流 (v19 手機完美版)</title>
+    <title>ETF 現金流試算 (v20 輸入框強化版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 -->
@@ -16,112 +16,123 @@
             --primary-color: #198754;
             --highlight-bg: #fffde7;
             --bg-color: #f8f9fa;
+            --input-bg: #f8f9fa; /* 輸入框背景色 */
+            --input-border: #ced4da; /* 輸入框邊框色 */
         }
 
         body { 
             background-color: var(--bg-color); 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             color: #333;
-            font-size: 14px; /* 手機適讀大小 */
-            padding-bottom: 50px; /* 留給底部合計欄 */
+            font-size: 14px;
+            padding-bottom: 60px; /* 預留底部合計欄空間 */
         }
 
-        /* 移除容器左右留白，讓表格貼齊螢幕邊緣 */
+        /* 容器設定 */
         .container-fluid { padding-left: 0; padding-right: 0; max-width: 800px; margin: 0 auto; }
 
-        /* --- 頂部導航 (極致壓縮) --- */
+        /* --- 頂部導航 --- */
         .top-bar {
             background: white; 
             padding: 8px 5px; 
-            margin-bottom: 0; /* 去除下方留白 */
+            margin-bottom: 0; 
             border-bottom: 1px solid #ddd;
             position: sticky; top: 0; z-index: 900;
         }
 
         .header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; padding: 0 5px; }
 
-        /* 月份按鈕 (更扁平) */
+        /* 月份按鈕 */
         .month-bar { display: flex; gap: 2px; justify-content: center; overflow-x: auto; }
         .month-btn {
-            flex: 1; /* 平均分配寬度 */
-            min-width: 25px; height: 28px; 
-            border-radius: 2px;
-            font-weight: bold; border: none;
-            background: #f1f3f5; color: #666; font-size: 12px;
+            flex: 1;
+            min-width: 25px; height: 30px; 
+            border-radius: 4px;
+            font-weight: bold; border: 1px solid #eee;
+            background: #fff; color: #666; font-size: 12px;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
+            transition: all 0.2s;
         }
         .month-btn.active {
-            background-color: var(--primary-color); color: white;
+            background-color: var(--primary-color); color: white; border-color: var(--primary-color);
+            box-shadow: 0 2px 4px rgba(25, 135, 84, 0.3);
         }
 
-        /* --- 表格樣式 (無縫設計) --- */
-        .custom-table { width: 100%; border-collapse: collapse; background: white; }
+        /* --- 表格樣式 --- */
+        .custom-table { width: 100%; border-collapse: separate; border-spacing: 0; background: white; }
 
         .custom-table th {
             background-color: #e9ecef; color: #495057;
-            padding: 4px 2px; /* 極小間距 */
-            font-size: 12px; text-align: center;
-            border-bottom: 1px solid #ccc;
+            padding: 6px 4px;
+            font-size: 13px; text-align: center;
+            border-bottom: 2px solid #ccc;
             white-space: nowrap;
+            position: sticky; top: 0; /* 讓標題稍微黏住 */
         }
 
         .custom-table td {
-            padding: 4px 2px; 
+            padding: 6px 4px; /* 增加一點點內距讓輸入框好點 */
             vertical-align: middle;
             border-bottom: 1px solid #eee;
-            height: 40px;
+            height: 46px; /* 稍微增高一點點以容納明顯的輸入框 */
         }
 
         /* 黃底 (本月配息) */
         .highlight-row { background-color: var(--highlight-bg) !important; }
 
-        /* ETF 名稱區塊 (手機上垂直排列) */
-        .etf-info-cell { text-align: left; padding-left: 5px !important; }
+        /* ETF 名稱區塊 */
+        .etf-info-cell { text-align: left; padding-left: 8px !important; }
         .etf-info-wrapper {
-            display: flex; flex-direction: column; justify-content: center; line-height: 1.1;
+            display: flex; flex-direction: column; justify-content: center; line-height: 1.2;
         }
         .etf-code { font-weight: 800; font-size: 14px; color: #2c3e50; }
-        .etf-name { font-size: 11px; color: #888; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;}
+        .etf-name { font-size: 11px; color: #666; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;}
 
-        /* 標籤 (月/季) */
+        /* 標籤 */
         .badge-pill { 
-            display: inline-block; padding: 1px 3px; border-radius: 2px; 
-            font-size: 10px; line-height: 1; margin-left: 2px; vertical-align: text-top;
+            display: inline-block; padding: 1px 4px; border-radius: 3px; 
+            font-size: 10px; line-height: 1; margin-left: 4px; vertical-align: text-top;
         }
-        .badge-m { background-color: #d1e7dd; color: #0f5132; } 
-        .badge-q { background-color: #fff3cd; color: #856404; }
+        .badge-m { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; } 
+        .badge-q { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-        /* 輸入框 (無邊框風格，節省視覺雜訊) */
-        .input-compact {
+        /* --- 🌟 關鍵修改：輸入框顯眼化 --- */
+        .input-enhanced {
             width: 100%; 
             text-align: right;
-            border: 1px solid transparent; /* 平常無框 */
-            border-bottom: 1px solid #eee; /* 只留底線 */
-            border-radius: 0;
-            padding: 2px;
-            font-size: 14px; font-weight: 600; color: #333;
-            background-color: transparent;
+            border: 1px solid var(--input-border); /* 明顯的邊框 */
+            border-radius: 4px; /* 圓角 */
+            padding: 4px 6px; /* 舒適的內距 */
+            font-size: 14px; font-weight: 700; color: #333;
+            background-color: var(--input-bg); /* 淺灰背景，區分輸入區 */
+            transition: all 0.2s ease-in-out;
+            box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); /* 微微內陰影 */
         }
-        .input-compact:focus {
-            border-bottom: 2px solid var(--primary-color); outline: none; background-color: #f8fff9;
+        /* 點擊時的特效 */
+        .input-enhanced:focus {
+            background-color: #fff; /* 聚焦變全白 */
+            border-color: var(--primary-color);
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(25, 135, 84, 0.25); /* 綠色光暈 */
         }
         
         /* 試算金額 */
-        .amount-cell { text-align: right; padding-right: 5px !important; }
-        .amount-text { font-size: 14px; font-weight: bold; color: var(--primary-color); }
+        .amount-cell { text-align: right; padding-right: 8px !important; }
+        .amount-text { font-size: 15px; font-weight: 800; color: var(--primary-color); letter-spacing: 0.5px; }
 
-        /* --- 底部合計 (超薄) --- */
+        /* --- 底部合計 --- */
         .footer-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: rgba(33, 37, 41, 0.95); 
+            background: rgba(33, 37, 41, 0.98); 
             color: #fff;
-            padding: 6px 10px;
+            padding: 10px 15px;
             z-index: 1000;
             display: flex; justify-content: space-between; align-items: center;
-            font-size: 13px;
+            font-size: 14px;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.2);
         }
-        .total-amount { font-size: 16px; font-weight: bold; color: #76ff03; }
+        .total-amount { font-size: 18px; font-weight: bold; color: #76ff03; }
 
         /* 列印時才顯示標題 */
         .print-only-header { display: none; }
@@ -131,6 +142,7 @@
             .print-only-header { display: block; text-align: center; margin-bottom: 20px; }
             .container-fluid { max-width: 100%; }
             .custom-table th, .custom-table td { border: 1px solid #000; }
+            .input-enhanced { border: none; background: transparent; text-align: right; box-shadow: none; padding: 0; }
         }
     </style>
 </head>
@@ -138,40 +150,41 @@
 
 <div id="app">
     
-    <!-- 頂部操作區 (固定在頂端) -->
+    <!-- 頂部操作區 -->
     <div class="top-bar no-print">
         <div class="container-fluid">
-            <!-- 第一排：標題 + 功能按鈕 (極簡化) -->
+            <!-- 標題 + 功能按鈕 -->
             <div class="header-row">
                 <div class="d-flex align-items-center">
-                    <i class="fas fa-coins text-success me-1"></i>
-                    <span class="fw-bold text-dark">ETF 現金流</span>
+                    <i class="fas fa-coins text-success me-2"></i>
+                    <span class="fw-bold text-dark fs-6">ETF 現金流</span>
                 </div>
                 
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-sm py-0 px-2 fw-bold" data-bs-toggle="modal" data-bs-target="#summaryModal" style="font-size: 12px;">
-                        總覽
+                    <button class="btn btn-warning btn-sm py-1 px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#summaryModal" style="font-size: 12px;">
+                        <i class="fas fa-chart-pie me-1"></i>總覽
                     </button>
-                    <button class="btn btn-outline-secondary btn-sm py-0 px-2 ms-1 dropdown-toggle" type="button" data-bs-toggle="dropdown" style="font-size: 12px;">
-                        選單
+                    <button class="btn btn-outline-secondary btn-sm py-1 px-3 ms-2 dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" style="font-size: 12px;">
+                        功能
                     </button>
-                    <!-- 下拉選單內容 -->
+                    <!-- 下拉選單 -->
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 13px;">
-                        <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#helpModal">說明書</a></li>
+                        <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="fas fa-book me-2 text-primary"></i>操作說明</a></li>
                         <li><hr class="dropdown-divider my-1"></li>
-                        <li><a class="dropdown-item py-2" href="#" @click.prevent="backupDataJSON">匯出備份 (JSON)</a></li>
-                        <li><a class="dropdown-item py-2" href="#" @click.prevent="triggerImport">匯入備份 (JSON)</a></li>
-                        <li><a class="dropdown-item py-2" href="#" @click.prevent="exportCSV">匯出 Excel</a></li>
-                        <li><a class="dropdown-item py-2" href="#" @click.prevent="printPage">列印 / PDF</a></li>
+                        <li><a class="dropdown-item py-2" href="#" @click.prevent="backupDataJSON"><i class="fas fa-file-export me-2"></i>匯出備份 (JSON)</a></li>
+                        <li><a class="dropdown-item py-2" href="#" @click.prevent="triggerImport"><i class="fas fa-file-import me-2"></i>匯入備份 (JSON)</a></li>
                         <li><hr class="dropdown-divider my-1"></li>
-                        <li><a class="dropdown-item py-2 text-danger" href="#" @click.prevent="clearMonthDPS">清除本月金額</a></li>
-                        <li><a class="dropdown-item py-2 text-danger" href="#" @click.prevent="clearAnnualDPS">清除整年金額</a></li>
+                        <li><a class="dropdown-item py-2" href="#" @click.prevent="exportCSV"><i class="fas fa-file-csv me-2"></i>匯出 Excel</a></li>
+                        <li><a class="dropdown-item py-2" href="#" @click.prevent="printPage"><i class="fas fa-print me-2"></i>列印 / PDF</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="#" @click.prevent="clearMonthDPS"><i class="fas fa-eraser me-2"></i>清除本月金額</a></li>
+                        <li><a class="dropdown-item py-2 text-danger" href="#" @click.prevent="clearAnnualDPS"><i class="fas fa-trash-alt me-2"></i>清除整年金額</a></li>
                     </ul>
                 </div>
             </div>
 
-            <!-- 第二排：月份按鈕 (緊貼) -->
-            <div class="month-bar">
+            <!-- 月份按鈕 -->
+            <div class="month-bar mt-1">
                 <div v-for="m in 12" :key="m" 
                      class="month-btn" 
                      :class="{ active: currentMonth === m }"
@@ -192,10 +205,10 @@
         <table class="custom-table">
             <thead>
                 <tr>
-                    <th width="32%" style="text-align:left; padding-left:5px;">代號/名稱</th>
+                    <th width="32%" style="text-align:left; padding-left:8px;">代號/名稱</th>
                     <th width="22%">股數</th>
                     <th width="22%">配息</th>
-                    <th width="24%" style="text-align:right; padding-right:5px;">金額</th>
+                    <th width="24%" style="text-align:right; padding-right:8px;">金額</th>
                 </tr>
             </thead>
             <tbody>
@@ -214,13 +227,13 @@
                     
                     <!-- 股數輸入 -->
                     <td>
-                        <input type="number" class="input-compact" 
+                        <input type="number" class="input-enhanced" 
                                v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
                     </td>
                     
                     <!-- 配息輸入 -->
                     <td>
-                        <input type="number" step="0.001" class="input-compact" 
+                        <input type="number" step="0.001" class="input-enhanced" 
                                v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
                     </td>
                     
@@ -234,15 +247,18 @@
                 
                 <!-- 無資料時顯示 -->
                 <tr v-if="filteredList.length === 0">
-                    <td colspan="4" class="text-center text-muted py-4 small">本月無入帳</td>
+                    <td colspan="4" class="text-center text-muted py-5">
+                        <i class="fas fa-mug-hot fa-2x mb-2 text-secondary opacity-50"></i><br>
+                        本月無入帳款項
+                    </td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <!-- 底部合計 (極窄) -->
+    <!-- 底部合計 -->
     <div class="footer-bar no-print">
-        <div>
+        <div class="d-flex align-items-center">
             <span class="badge bg-light text-dark me-2">{{ currentMonth }}月</span>
             <span>預估入帳</span>
         </div>
@@ -293,8 +309,9 @@
                 </div>
                 <div class="modal-body small">
                     <ul class="ps-3 mb-0">
+                        <li class="mb-2"><strong>輸入框優化</strong>：現在輸入框有明顯的灰色背景，點擊後會發出綠光，更容易辨識。</li>
                         <li class="mb-1"><strong>黃底</strong>：代表本月有領息的季配 ETF。</li>
-                        <li class="mb-1"><strong>股數</strong>：連動所有月份。</li>
+                        <li class="mb-1"><strong>股數</strong>：連動所有月份，改一次全部更新。</li>
                         <li class="mb-1"><strong>配息</strong>：每月獨立輸入。</li>
                         <li>清除功能<strong>不會</strong>刪除您的股數。</li>
                     </ul>
@@ -345,7 +362,7 @@
                 '00720B': 3000, 
                 '00740B': 1000,
                 '00772B': 6369, 
-                '00850': 1000, // v18 updated
+                '00850': 1000, 
                 '00878': 7000, 
                 '00891': 12029,
                 '00915': 5000, 
@@ -368,7 +385,7 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v19_mobile_perfect (新版資料庫)
+                // Key: v19_mobile_perfect (資料庫通用)
                 const savedShares = localStorage.getItem('etf_shares_v19');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
