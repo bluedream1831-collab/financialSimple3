@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v21 完整版)</title>
+    <title>ETF 現金流試算 (v22 移除00795B)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 -->
@@ -337,7 +337,7 @@
 
             const fileInput = ref(null);
 
-            // ETF 清單設定
+            // ETF 清單設定 (移除 00795B)
             const etfConfig = [
                 { id: '0056', name: '元大高股息', freq: 'Q', months: [2,5,8,11] },
                 { id: '00720B', name: '元大投債', freq: 'Q', months: [2,5,8,11] },
@@ -347,7 +347,7 @@
                 { id: '00713', name: '高息低波', freq: 'Q', months: [1,4,7,10] },
                 { id: '00915', name: '凱基高息', freq: 'Q', months: [1,4,7,10] },
                 { id: '00900', name: '富邦特選', freq: 'M', months: [] },
-                { id: '00795B', name: '中信美債', freq: 'M', months: [] },
+                // 00795B 已移除
                 { id: '009805', name: '新光美國電力', freq: 'M', months: [] },
                 { id: '00922', name: '國泰領袖50', freq: 'M', months: [] },
                 { id: '00740B', name: '全球投債', freq: 'M', months: [] },
@@ -361,7 +361,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
-            // 預設股數 (更新 00891 為 12000)
+            // 預設股數 (00795B 移除 / 00891=12000 / 00850=1000)
             const defaultShares = {
                 '0056': 6000, 
                 '00713': 3038, 
@@ -379,7 +379,7 @@
                 '00940': 3000, 
                 '00950B': 10000, 
                 '00959B': 5000,
-                '00795B': 1000, 
+                // '00795B': 1000,  // Removed
                 '00900': 1000, 
                 '009805': 1000, 
                 '00922': 2000
@@ -391,8 +391,8 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v21 (新版本 key)
-                const savedShares = localStorage.getItem('etf_shares_v21');
+                // Key: v22 (版本更新)
+                const savedShares = localStorage.getItem('etf_shares_v22');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -400,7 +400,7 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v21');
+                const savedDps = localStorage.getItem('etf_dps_v22');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
@@ -409,11 +409,11 @@
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v21', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v22', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v21', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v22', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -457,126 +457,4 @@
                         const isPayMonth = (etf.freq === 'M') || etf.months.includes(m);
                         if(isPayMonth) {
                             const s = sharesData.value[etf.id] || 0;
-                            const d = (dpsData.value[m] && dpsData.value[m][etf.id]) || 0;
-                            monthTotal += Math.round(s * d);
-                        }
-                    });
-                    summary.push({ month: m, total: monthTotal });
-                }
-                return summary;
-            });
-
-            const yearlyTotal = computed(() => {
-                return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
-            });
-
-            // --- 功能區 ---
-            const exportCSV = () => {
-                let csvContent = "\uFEFF"; 
-                csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
-                csvContent += "代號,名稱,類型,持有股數,配息金額,入帳試算\n";
-
-                filteredList.value.forEach(etf => {
-                    const s = sharesData.value[etf.id] || 0;
-                    const d = (dpsData.value[currentMonth.value]?.[etf.id]) || 0;
-                    const amt = Math.round(s * d);
-                    const type = etf.freq === 'M' ? '月配' : '季配';
-                    csvContent += `${etf.id},${etf.name},${type},${s},${d},${amt}\n`;
-                });
-                csvContent += `,,,Total,,${totalAmount.value}\n`;
-
-                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `領息表_${currentMonth.value}月.csv`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-
-            const printPage = () => {
-                window.print();
-            };
-
-            const backupDataJSON = () => {
-                const backup = {
-                    shares: sharesData.value,
-                    dps: dpsData.value,
-                    timestamp: new Date().toISOString(),
-                    version: 'v21'
-                };
-                const jsonString = JSON.stringify(backup, null, 2);
-                const blob = new Blob([jsonString], { type: "application/json" });
-                const link = document.createElement("a");
-                const url = URL.createObjectURL(blob);
-                link.setAttribute("href", url);
-                link.setAttribute("download", `ETF_Backup_${new Date().toISOString().slice(0,10)}.json`);
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            };
-
-            const triggerImport = () => {
-                fileInput.value.click();
-            };
-
-            const handleFileImport = (event) => {
-                const file = event.target.files[0];
-                if (!file) return;
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        const data = JSON.parse(e.target.result);
-                        if (data.shares && data.dps) {
-                            if(confirm("確定要匯入此備份檔嗎？\n\n目前的資料將會被覆蓋。")) {
-                                sharesData.value = data.shares;
-                                dpsData.value = data.dps;
-                                saveShares();
-                                saveDps();
-                                alert("匯入成功！");
-                            }
-                        } else {
-                            alert("格式不正確。");
-                        }
-                    } catch (err) { alert("無法解析檔案。"); }
-                    event.target.value = '';
-                };
-                reader.readAsText(file);
-            };
-
-            const clearMonthDPS = () => {
-                if(confirm(`確定要清除「${currentMonth.value}月」的所有配息金額嗎？\n\n(股數會保留)`)) {
-                    dpsData.value[currentMonth.value] = {};
-                    saveDps();
-                }
-            };
-
-            const clearAnnualDPS = () => {
-                if(confirm("確定要清除「整年度 (1~12月)」所有的配息金額嗎？\n\n(股數會保留)")) {
-                    for(let m=1; m<=12; m++) {
-                        dpsData.value[m] = {};
-                    }
-                    saveDps();
-                    alert("已清除配息金額");
-                }
-            };
-
-            onMounted(() => {
-                loadData();
-            });
-
-            return {
-                currentMonth, sharesData, dpsData, getMonthDps,
-                filteredList, isHighlight, saveShares, saveDps,
-                calculateAmount, totalAmount,
-                yearlySummary, yearlyTotal,
-                exportCSV, printPage, clearMonthDPS, clearAnnualDPS,
-                backupDataJSON, triggerImport, handleFileImport, fileInput
-            };
-        }
-    }).mount('#app');
-</script>
-
-</body>
-</html>
+                            const d = (dpsData.value
