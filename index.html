@@ -457,4 +457,126 @@
                         const isPayMonth = (etf.freq === 'M') || etf.months.includes(m);
                         if(isPayMonth) {
                             const s = sharesData.value[etf.id] || 0;
-                            const d = (dpsData.value
+                            const d = (dpsData.value[m] && dpsData.value[m][etf.id]) || 0;
+                            monthTotal += Math.round(s * d);
+                        }
+                    });
+                    summary.push({ month: m, total: monthTotal });
+                }
+                return summary;
+            });
+
+            const yearlyTotal = computed(() => {
+                return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
+            });
+
+            // --- 功能區 ---
+            const exportCSV = () => {
+                let csvContent = "\uFEFF"; 
+                csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
+                csvContent += "代號,名稱,類型,持有股數,配息金額,入帳試算\n";
+
+                filteredList.value.forEach(etf => {
+                    const s = sharesData.value[etf.id] || 0;
+                    const d = (dpsData.value[currentMonth.value]?.[etf.id]) || 0;
+                    const amt = Math.round(s * d);
+                    const type = etf.freq === 'M' ? '月配' : '季配';
+                    csvContent += `${etf.id},${etf.name},${type},${s},${d},${amt}\n`;
+                });
+                csvContent += `,,,Total,,${totalAmount.value}\n`;
+
+                const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `領息表_${currentMonth.value}月.csv`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const printPage = () => {
+                window.print();
+            };
+
+            const backupDataJSON = () => {
+                const backup = {
+                    shares: sharesData.value,
+                    dps: dpsData.value,
+                    timestamp: new Date().toISOString(),
+                    version: 'v22'
+                };
+                const jsonString = JSON.stringify(backup, null, 2);
+                const blob = new Blob([jsonString], { type: "application/json" });
+                const link = document.createElement("a");
+                const url = URL.createObjectURL(blob);
+                link.setAttribute("href", url);
+                link.setAttribute("download", `ETF_Backup_${new Date().toISOString().slice(0,10)}.json`);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            };
+
+            const triggerImport = () => {
+                fileInput.value.click();
+            };
+
+            const handleFileImport = (event) => {
+                const file = event.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const data = JSON.parse(e.target.result);
+                        if (data.shares && data.dps) {
+                            if(confirm("確定要匯入此備份檔嗎？\n\n目前的資料將會被覆蓋。")) {
+                                sharesData.value = data.shares;
+                                dpsData.value = data.dps;
+                                saveShares();
+                                saveDps();
+                                alert("匯入成功！");
+                            }
+                        } else {
+                            alert("格式不正確。");
+                        }
+                    } catch (err) { alert("無法解析檔案。"); }
+                    event.target.value = '';
+                };
+                reader.readAsText(file);
+            };
+
+            const clearMonthDPS = () => {
+                if(confirm(`確定要清除「${currentMonth.value}月」的所有配息金額嗎？\n\n(股數會保留)`)) {
+                    dpsData.value[currentMonth.value] = {};
+                    saveDps();
+                }
+            };
+
+            const clearAnnualDPS = () => {
+                if(confirm("確定要清除「整年度 (1~12月)」所有的配息金額嗎？\n\n(股數會保留)")) {
+                    for(let m=1; m<=12; m++) {
+                        dpsData.value[m] = {};
+                    }
+                    saveDps();
+                    alert("已清除配息金額");
+                }
+            };
+
+            onMounted(() => {
+                loadData();
+            });
+
+            return {
+                currentMonth, sharesData, dpsData, getMonthDps,
+                filteredList, isHighlight, saveShares, saveDps,
+                calculateAmount, totalAmount,
+                yearlySummary, yearlyTotal,
+                exportCSV, printPage, clearMonthDPS, clearAnnualDPS,
+                backupDataJSON, triggerImport, handleFileImport, fileInput
+            };
+        }
+    }).mount('#app');
+</script>
+
+</body>
+</html>
