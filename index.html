@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v16 極致緊湊+備份)</title>
+    <title>ETF 現金流試算 (v18 極致緊湊版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 (CSS) -->
@@ -22,25 +22,26 @@
             background-color: var(--bg-color); 
             font-family: "Microsoft JhengHei", "Heiti TC", sans-serif;
             color: #333;
-            font-size: 0.95rem; /* 整體字體稍微縮小一點點以節省空間 */
+            font-size: 0.9rem; /* 整體字體縮小，讓版面更密 */
         }
 
-        /* 限制最大寬度，避免太寬 */
-        .container { max-width: 1000px; padding-bottom: 60px; }
+        .container { max-width: 960px; padding-bottom: 60px; }
 
-        /* --- 頂部導航 (更緊湊) --- */
+        /* --- 頂部導航 (極度壓縮) --- */
         .top-bar {
-            background: white; padding: 8px 0; margin-bottom: 10px;
-            box-shadow: 0 1px 5px rgba(0,0,0,0.05);
+            background: white; padding: 5px 0; margin-bottom: 10px; /* 減少上下間距 */
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
             position: sticky; top: 0; z-index: 900;
         }
 
-        /* 月份按鈕 (變小一點) */
-        .month-bar { display: flex; gap: 4px; justify-content: center; }
+        .header-row { display: flex; justify-content: space-between; align-items: center; }
+
+        /* 月份按鈕 (變矮) */
+        .month-bar { display: flex; gap: 3px; justify-content: center; margin-top: 5px; }
         .month-btn {
-            width: 40px; height: 30px; border-radius: 4px;
+            min-width: 38px; height: 28px; border-radius: 3px;
             font-weight: bold; border: 1px solid #e0e0e0;
-            background: white; color: #666; font-size: 0.85rem;
+            background: white; color: #666; font-size: 0.8rem;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer;
         }
@@ -49,98 +50,78 @@
             background-color: var(--primary-color); color: white; border-color: var(--primary-color);
         }
 
-        /* --- 表格樣式 (極致緊湊) --- */
+        /* --- 表格樣式 (高密度) --- */
         .table-card {
-            background: white; border-radius: 6px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+            background: white; border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
             border: 1px solid #dee2e6;
-            overflow: hidden;
+            overflow-x: auto;
         }
 
-        .custom-table { width: 100%; border-collapse: collapse; }
+        .custom-table { width: 100%; border-collapse: collapse; min-width: 600px; }
 
         .custom-table th {
             background-color: #f1f3f5; color: #495057;
-            padding: 8px 12px; /* 縮小標題高度 */
-            font-size: 0.85rem; font-weight: bold;
-            border-bottom: 2px solid #ddd;
+            padding: 6px 10px; /* 標題變矮 */
+            font-size: 0.8rem; font-weight: bold;
+            border-bottom: 1px solid #ccc;
             white-space: nowrap;
         }
 
         .custom-table td {
-            padding: 4px 12px; /* 關鍵：縮小內容垂直間距 */
+            padding: 2px 10px; /* 內容垂直間距極小化 */
             vertical-align: middle;
             border-bottom: 1px solid #f0f0f0;
-            height: 40px; /* 強制壓低列高 */
+            height: 36px; /* 強制壓低行高 */
         }
 
         /* 黃底 */
-        .highlight-row-pc { background-color: var(--highlight-bg); }
+        .highlight-row { background-color: var(--highlight-bg); }
 
         /* ETF 名稱區塊 */
         .etf-info-wrapper {
             display: flex; align-items: center; white-space: nowrap;
         }
-        .etf-code { font-weight: 700; font-size: 1rem; margin-right: 8px; color: #2c3e50; width: 60px; }
-        .etf-name { font-size: 0.9rem; color: #555; margin-right: 8px; }
+        .etf-code { font-weight: 700; font-size: 0.95rem; margin-right: 6px; color: #2c3e50; width: 55px; }
+        .etf-name { font-size: 0.85rem; color: #555; margin-right: 6px; }
 
-        /* 輸入框 (變矮、變精緻) */
+        /* 輸入框 (變很矮) */
         .input-compact {
-            width: 100%; max-width: 100px;
+            width: 100%; max-width: 90px;
             text-align: right;
             border: 1px solid #ced4da;
-            border-radius: 3px;
-            padding: 2px 6px; /* 內距縮小 */
-            font-size: 0.9rem; font-weight: 600; color: #495057;
-            height: 28px; /* 固定高度 */
+            border-radius: 2px;
+            padding: 1px 5px;
+            font-size: 0.85rem; font-weight: 600; color: #495057;
+            height: 26px; /* 固定高度 */
         }
         .input-compact:focus {
             border-color: var(--primary-color); outline: none; background-color: #f8fff9;
         }
 
-        .amount-text { font-size: 1rem; font-weight: bold; color: var(--primary-color); }
+        .amount-text { font-size: 0.95rem; font-weight: bold; color: var(--primary-color); }
 
         /* 標籤 */
-        .badge-pill { padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; display: inline-block; }
+        .badge-pill { padding: 1px 4px; border-radius: 2px; font-size: 0.6rem; display: inline-block; }
         .badge-m { background-color: #d1e7dd; color: #0f5132; } 
         .badge-q { background-color: #fff3cd; color: #856404; }
-
-        /* --- 手機版卡片 --- */
-        .mobile-card {
-            background: white; border-radius: 8px; padding: 10px; margin-bottom: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid #eee;
-        }
-        .mobile-card.highlight-card { background-color: var(--highlight-bg); border: 1px solid #ffe082; }
 
         /* --- 底部合計 --- */
         .footer-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(255, 255, 255, 0.98); 
             border-top: 1px solid #ccc;
-            padding: 8px 0;
+            padding: 6px 0;
             z-index: 1000;
             box-shadow: 0 -2px 5px rgba(0,0,0,0.05);
         }
-        .total-amount { font-size: 1.25rem; font-weight: 800; color: var(--primary-color); }
-
-        /* 媒體查詢 */
-        @media (max-width: 768px) {
-            .desktop-view { display: none; }
-            .mobile-view { display: block; }
-            .container { padding-left: 10px; padding-right: 10px; }
-        }
-        @media (min-width: 769px) {
-            .desktop-view { display: block; }
-            .mobile-view { display: none; }
-        }
+        .total-amount { font-size: 1.2rem; font-weight: 800; color: var(--primary-color); }
 
         @media print {
             .no-print, .month-bar, .footer-bar, .top-bar { display: none !important; }
-            .container { max-width: 100%; }
-            .desktop-view { display: block !important; }
-            .mobile-view { display: none !important; }
-            .table-card { border: 1px solid #000; box-shadow: none; }
-            .print-header { display: block !important; text-align: center; margin-bottom: 20px; }
+            .container { max-width: 100%; padding: 0; }
+            .table-card { border: 1px solid #000; box-shadow: none; overflow: visible; }
+            .print-header { display: block !important; text-align: center; margin-bottom: 10px; }
         }
         .print-header { display: none; }
     </style>
@@ -152,31 +133,31 @@
     <!-- 頂部操作區 -->
     <div class="top-bar no-print">
         <div class="container">
-            <div class="d-flex justify-content-between align-items-center mb-2">
+            <div class="header-row">
                 <div class="d-flex align-items-center">
                     <i class="fas fa-coins text-success me-2"></i>
-                    <h5 class="mb-0 fw-bold text-dark" style="font-size: 1.1rem;">ETF 現金流</h5>
+                    <h6 class="mb-0 fw-bold text-dark">ETF 現金流</h6>
                 </div>
                 
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#summaryModal" style="font-size: 0.85rem;">
+                    <button class="btn btn-warning btn-sm fw-bold shadow-sm py-0" data-bs-toggle="modal" data-bs-target="#summaryModal" style="font-size: 0.8rem;">
                         <i class="fas fa-chart-pie me-1"></i>總覽
                     </button>
                     
-                    <button class="btn btn-outline-secondary btn-sm ms-2 dropdown-toggle" type="button" data-bs-toggle="dropdown" style="font-size: 0.85rem;">
+                    <button class="btn btn-outline-secondary btn-sm ms-2 dropdown-toggle py-0" type="button" data-bs-toggle="dropdown" style="font-size: 0.8rem;">
                         <i class="fas fa-cog me-1"></i>功能
                     </button>
-                    <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size: 0.9rem;">
-                        <li><h6 class="dropdown-header">資料管理</h6></li>
-                        <li><a class="dropdown-item" href="#" @click.prevent="backupDataJSON"><i class="fas fa-file-export me-2"></i>匯出備份 (JSON)</a></li>
-                        <li><a class="dropdown-item" href="#" @click.prevent="triggerImport"><i class="fas fa-file-import me-2"></i>匯入備份 (JSON)</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><h6 class="dropdown-header">報表</h6></li>
-                        <li><a class="dropdown-item" href="#" @click.prevent="exportCSV"><i class="fas fa-file-csv me-2"></i>匯出 Excel</a></li>
-                        <li><a class="dropdown-item" href="#" @click.prevent="printPage"><i class="fas fa-print me-2"></i>列印 / PDF</a></li>
-                        <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item text-danger" href="#" @click.prevent="clearMonthDPS"><i class="fas fa-eraser me-2"></i>清除本月金額</a></li>
-                        <li><a class="dropdown-item text-danger" href="#" @click.prevent="clearAnnualDPS"><i class="fas fa-trash-alt me-2"></i>清除整年金額</a></li>
+                    <ul class="dropdown-menu dropdown-menu-end shadow" style="font-size: 0.85rem;">
+                        <li><h6 class="dropdown-header py-1">資料管理</h6></li>
+                        <li><a class="dropdown-item py-1" href="#" @click.prevent="backupDataJSON"><i class="fas fa-file-export me-2"></i>匯出備份 (JSON)</a></li>
+                        <li><a class="dropdown-item py-1" href="#" @click.prevent="triggerImport"><i class="fas fa-file-import me-2"></i>匯入備份 (JSON)</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><h6 class="dropdown-header py-1">報表</h6></li>
+                        <li><a class="dropdown-item py-1" href="#" @click.prevent="exportCSV"><i class="fas fa-file-csv me-2"></i>匯出 Excel</a></li>
+                        <li><a class="dropdown-item py-1" href="#" @click.prevent="printPage"><i class="fas fa-print me-2"></i>列印 / PDF</a></li>
+                        <li><hr class="dropdown-divider my-1"></li>
+                        <li><a class="dropdown-item py-1 text-danger" href="#" @click.prevent="clearMonthDPS"><i class="fas fa-eraser me-2"></i>清除本月金額</a></li>
+                        <li><a class="dropdown-item py-1 text-danger" href="#" @click.prevent="clearAnnualDPS"><i class="fas fa-trash-alt me-2"></i>清除整年金額</a></li>
                     </ul>
                 </div>
             </div>
@@ -187,7 +168,7 @@
                         class="btn month-btn"
                         :class="{ active: currentMonth === m }"
                         @click="currentMonth = m">
-                    {{ m }}月
+                    {{ m }}
                 </button>
             </div>
         </div>
@@ -198,89 +179,49 @@
 
     <div class="container">
         <div class="print-header">
-            <h2>{{ currentMonth }}月份 ETF 領息報表</h2>
+            <h3>{{ currentMonth }}月份 ETF 領息報表</h3>
         </div>
 
-        <!-- === 電腦版表格 (桌面顯示) === -->
-        <div class="desktop-view">
-            <div class="table-card">
-                <table class="custom-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 40%; padding-left: 15px;">ETF 代號 / 名稱</th>
-                            <th style="width: 20%; text-align: right;">持有股數</th>
-                            <th style="width: 20%; text-align: right;">預估配息</th>
-                            <th style="width: 20%; text-align: right; padding-right: 15px;">入帳金額</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr v-for="etf in filteredList" :key="etf.id" :class="{ 'highlight-row-pc': isHighlight(etf) }">
-                            <td style="padding-left: 15px;">
-                                <div class="etf-info-wrapper">
-                                    <span class="etf-code">{{ etf.id }}</span>
-                                    <span class="etf-name">{{ etf.name }}</span>
-                                    <span v-if="etf.freq==='M'" class="badge-pill badge-m">月配</span>
-                                    <span v-else class="badge-pill badge-q">季配</span>
-                                </div>
-                            </td>
-                            <td style="text-align: right;">
-                                <input type="number" class="input-compact" 
-                                       v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
-                            </td>
-                            <td style="text-align: right;">
-                                <input type="number" step="0.001" class="input-compact" 
-                                       v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
-                            </td>
-                            <td style="text-align: right; padding-right: 15px;">
-                                <div class="amount-text">
-                                    {{ calculateAmount(etf.id).toLocaleString() }}
-                                </div>
-                            </td>
-                        </tr>
-                        <tr v-if="filteredList.length === 0">
-                            <td colspan="4" class="text-center py-4 text-muted small">本月無入帳款項</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- === 手機版卡片 (手機顯示) === -->
-        <div class="mobile-view">
-            <div v-for="etf in filteredList" :key="etf.id" class="mobile-card" :class="{ 'highlight-card': isHighlight(etf) }">
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div class="d-flex align-items-center">
-                        <div class="fw-bold me-2 text-dark">{{ etf.id }}</div>
-                        <div class="text-secondary small me-2">{{ etf.name }}</div>
-                        <span v-if="etf.freq==='M'" class="badge-pill badge-m">月</span>
-                        <span v-else class="badge-pill badge-q">季</span>
-                    </div>
-                </div>
-
-                <div class="row g-2 align-items-end">
-                    <div class="col-4">
-                        <small class="text-muted d-block mb-1" style="font-size:0.7rem">持有股數</small>
-                        <input type="number" class="form-control form-control-sm fw-bold text-primary text-center px-0" 
-                               v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
-                    </div>
-                    <div class="col-4">
-                        <small class="text-muted d-block mb-1" style="font-size:0.7rem">預估配息</small>
-                        <input type="number" step="0.001" class="form-control form-control-sm fw-bold text-center px-0" 
-                               v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
-                    </div>
-                    <div class="col-4 text-end">
-                        <small class="text-muted d-block mb-1" style="font-size:0.7rem">入帳金額</small>
-                        <div class="fw-bold text-success fs-6">
-                            {{ calculateAmount(etf.id).toLocaleString() }}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div v-if="filteredList.length === 0" class="text-center py-5 text-muted">
-                <i class="fas fa-coffee fa-2x mb-3 text-secondary opacity-50"></i>
-                <p>本月無入帳款項</p>
-            </div>
+        <!-- 統一表格顯示 -->
+        <div class="table-card">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th style="width: 40%; padding-left: 10px;">代號 / 名稱</th>
+                        <th style="width: 20%; text-align: right;">持有股數</th>
+                        <th style="width: 20%; text-align: right;">預估配息</th>
+                        <th style="width: 20%; text-align: right; padding-right: 10px;">入帳金額</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="etf in filteredList" :key="etf.id" :class="{ 'highlight-row': isHighlight(etf) }">
+                        <td style="padding-left: 10px;">
+                            <div class="etf-info-wrapper">
+                                <span class="etf-code">{{ etf.id }}</span>
+                                <span class="etf-name">{{ etf.name }}</span>
+                                <span v-if="etf.freq==='M'" class="badge-pill badge-m">月</span>
+                                <span v-else class="badge-pill badge-q">季</span>
+                            </div>
+                        </td>
+                        <td style="text-align: right;">
+                            <input type="number" class="input-compact" 
+                                   v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
+                        </td>
+                        <td style="text-align: right;">
+                            <input type="number" step="0.001" class="input-compact" 
+                                   v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
+                        </td>
+                        <td style="text-align: right; padding-right: 10px;">
+                            <div class="amount-text">
+                                {{ calculateAmount(etf.id).toLocaleString() }}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="filteredList.length === 0">
+                        <td colspan="4" class="text-center py-3 text-muted small">本月無入帳款項</td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
 
     </div>
@@ -311,15 +252,15 @@
                         <table class="table table-hover mb-0 text-center align-middle table-sm">
                             <thead class="sticky-top bg-white">
                                 <tr>
-                                    <th class="py-2 text-secondary border-bottom">月份</th>
-                                    <th class="py-2 text-secondary border-bottom">金額</th>
+                                    <th class="py-1 text-secondary border-bottom small">月份</th>
+                                    <th class="py-1 text-secondary border-bottom small">金額</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <tr v-for="item in yearlySummary" :key="item.month" 
                                     :class="{'table-active fw-bold': item.month === currentMonth}">
-                                    <td class="py-1">{{ item.month }} 月</td>
-                                    <td class="py-1 text-success font-monospace">{{ item.total.toLocaleString() }}</td>
+                                    <td class="py-1 small">{{ item.month }} 月</td>
+                                    <td class="py-1 text-success font-monospace small">{{ item.total.toLocaleString() }}</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -328,6 +269,40 @@
                 <div class="modal-footer bg-light py-2 justify-content-between">
                     <span class="text-secondary fw-bold small">全年</span>
                     <span class="fs-6 fw-bold text-dark">NT$ {{ yearlyTotal.toLocaleString() }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 使用說明 Modal -->
+    <div class="modal fade" id="helpModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-primary bg-opacity-10 py-2">
+                    <h5 class="modal-title fw-bold text-primary fs-6"><i class="fas fa-book-open me-2"></i>操作說明</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <h6 class="text-success fw-bold border-bottom pb-1 small"><i class="fas fa-eye me-2"></i>顯示邏輯</h6>
+                            <p class="small text-secondary mt-1 mb-0">
+                                採<strong>「現金入帳月份」</strong>制。<br>
+                                <span class="badge badge-m text-dark mt-1">月配 (綠標)</span> 每月顯示。<br>
+                                <span class="badge badge-q text-dark mt-1">季配 (黃底)</span> 僅在入帳月顯示。
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="text-primary fw-bold border-bottom pb-1 small"><i class="fas fa-keyboard me-2"></i>資料輸入</h6>
+                            <p class="small text-secondary mt-1 mb-0">
+                                <strong>持有股數</strong>：全年度連動，改一次全部更新。<br>
+                                <strong>配息金額</strong>：每月獨立，依照公告自行輸入。
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light py-1">
+                    <button type="button" class="btn btn-sm btn-secondary w-100" data-bs-dismiss="modal">關閉</button>
                 </div>
             </div>
         </div>
@@ -371,11 +346,11 @@
 
             const defaultShares = {
                 '0056': 6000, 
-                '00713': 3038, // v11 updated
+                '00713': 3038, 
                 '00720B': 3000, 
                 '00740B': 1000,
-                '00772B': 6369, // v11 updated
-                '00850': 1102, 
+                '00772B': 6369, 
+                '00850': 1000, // v18 updated: 1102 -> 1000
                 '00878': 7000, 
                 '00891': 12029,
                 '00915': 5000, 
@@ -398,8 +373,8 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // 使用 v16_compact key
-                const savedShares = localStorage.getItem('etf_shares_v16_compact');
+                // Key: v18_density (強制使用新密度版設定)
+                const savedShares = localStorage.getItem('etf_shares_v18_density');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -407,7 +382,7 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v16_compact');
+                const savedDps = localStorage.getItem('etf_dps_v18_density');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
@@ -416,11 +391,11 @@
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v16_compact', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v18_density', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v16_compact', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v18_density', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -512,7 +487,7 @@
                     shares: sharesData.value,
                     dps: dpsData.value,
                     timestamp: new Date().toISOString(),
-                    version: 'v16_compact'
+                    version: 'v18_density'
                 };
                 const jsonString = JSON.stringify(backup, null, 2);
                 const blob = new Blob([jsonString], { type: "application/json" });
