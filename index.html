@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ETF 現金流試算 (預設0+說明書)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ETF 現金流試算 (手機優化版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 (CSS) -->
@@ -12,63 +12,80 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <style>
-        body { background-color: #f4f6f9; font-family: "Microsoft JhengHei", sans-serif; }
-        .container { max-width: 900px; margin-top: 20px; padding-bottom: 120px; }
+        body { background-color: #f0f2f5; font-family: -apple-system, BlinkMacSystemFont, "Microsoft JhengHei", "Segoe UI", Roboto, sans-serif; }
+        .container { max-width: 900px; padding-bottom: 100px; } /* 底部留白給合計欄 */
         
-        /* 月份導航列 */
-        .month-bar {
-            display: flex; overflow-x: auto; gap: 5px; padding: 10px 0;
-            background: white; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);
-            margin-bottom: 15px;
+        /* --- 頂部導航與標題 --- */
+        .top-bar {
+            background: white; padding: 15px 0; margin-bottom: 15px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            position: sticky; top: 0; z-index: 900;
         }
+
+        /* 月份按鈕滑動區 */
+        .month-bar {
+            display: flex; overflow-x: auto; gap: 8px; padding: 5px 2px;
+            -webkit-overflow-scrolling: touch; /* iOS 滑動順暢 */
+            scrollbar-width: none; /* Firefox 隱藏捲軸 */
+        }
+        .month-bar::-webkit-scrollbar { display: none; } /* Chrome 隱藏捲軸 */
+        
         .month-btn {
-            flex: 0 0 auto; width: 60px; border-radius: 20px; font-weight: bold;
+            flex: 0 0 auto; width: 55px; height: 38px;
+            border-radius: 12px; font-weight: bold; border: 1px solid #dee2e6;
+            background: white; color: #666;
+            display: flex; align-items: center; justify-content: center;
         }
         .month-btn.active {
             background-color: #198754; color: white; border-color: #198754;
+            box-shadow: 0 2px 6px rgba(25, 135, 84, 0.4);
         }
 
-        /* 表格區塊 */
-        .card-table { border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 12px; overflow: hidden; }
+        /* --- 表格樣式 (電腦版) --- */
+        .card-table { border: none; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border-radius: 12px; overflow: hidden; background: white; }
         .table th { background-color: #2c3e50; color: white; text-align: center; white-space: nowrap; }
         .table td { vertical-align: middle; }
-        
-        /* 標籤樣式 */
-        .badge-type { font-size: 0.75rem; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-top: 2px;}
-        .badge-m { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; } 
-        .badge-q { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
-        
-        /* 亮黃底 */
-        .highlight-row { background-color: #ffffd0 !important; }
-        .highlight-row td { background-color: #ffffd0 !important; }
+        .highlight-row-pc { background-color: #fffde7 !important; } /* 電腦版黃底 */
 
-        /* 輸入框 */
-        input.form-control { text-align: right; border: 1px solid #dee2e6; }
-        input.form-control:focus { background-color: #f1f8ff; border-color: #198754; box-shadow: none; }
+        /* --- 卡片樣式 (手機版) --- */
+        .mobile-card {
+            background: white; border-radius: 12px; padding: 15px; margin-bottom: 12px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05); border: 1px solid #eee;
+            position: relative;
+        }
+        .mobile-card.highlight-card {
+            background-color: #fffde7; /* 手機版黃底 */
+            border: 1px solid #fbc02d;
+        }
+        .input-label { font-size: 0.75rem; color: #888; margin-bottom: 2px; display: block; }
+        
+        /* 標籤 */
+        .badge-m { background-color: #d1e7dd; color: #0f5132; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; } 
+        .badge-q { background-color: #fff3cd; color: #856404; font-size: 0.75rem; padding: 4px 8px; border-radius: 6px; }
 
-        /* 底部合計 */
+        /* 輸入框優化 */
+        input.form-control { text-align: right; border: 1px solid #ced4da; background: #fff; }
+        input.form-control:focus { background-color: #fff; border-color: #198754; box-shadow: 0 0 0 0.2rem rgba(25, 135, 84, 0.15); }
+
+        /* --- 底部固定合計欄 --- */
         .footer-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
-            background: #212529; color: #76ff03; 
+            background: rgba(33, 37, 41, 0.95); backdrop-filter: blur(5px);
+            color: #76ff03; 
             padding: 12px 20px; 
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 -4px 10px rgba(0,0,0,0.15); z-index: 1000;
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.1); z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom, 12px); /* 適配 iPhone 底部橫條 */
         }
-        .total-amount { font-size: 1.4rem; font-weight: bold; }
-
-        /* Modal 通用 */
-        .summary-table th { background-color: #198754; color: white; }
-        .summary-row-current { background-color: #e8f5e9; font-weight: bold; }
-        
-        .modal-body h5 { color: #198754; margin-top: 15px; font-weight: bold; font-size: 1.1rem; }
-        .modal-body ul { padding-left: 20px; margin-bottom: 0; }
-        .modal-body li { margin-bottom: 8px; }
+        .total-label { color: #aaa; font-size: 0.9rem; margin-right: 10px; }
+        .total-amount { font-size: 1.5rem; font-weight: bold; letter-spacing: 0.5px; }
 
         /* 列印設定 */
         @media print {
-            .no-print, .month-bar, .footer-bar, .btn-group-action { display: none !important; }
+            .no-print, .month-bar, .footer-bar, .top-bar { display: none !important; }
             .container { max-width: 100%; padding: 0; margin: 0; }
-            .card-table { box-shadow: none; }
+            .d-md-table { display: table !important; width: 100%; } /* 強制顯示表格 */
+            .d-md-none { display: none !important; } /* 隱藏手機卡片 */
             .table th, .table td { border: 1px solid #000 !important; }
             body { background-color: white; }
             .print-header { display: block !important; margin-bottom: 20px; text-align: center; }
@@ -78,130 +95,154 @@
 </head>
 <body>
 
-<div id="app" class="container">
+<div id="app">
     
-    <!-- 標題與操作區 -->
-    <div class="d-flex justify-content-between align-items-center mb-3 no-print">
-        <h4 class="mb-0 fw-bold text-dark"><i class="fas fa-hand-holding-dollar me-2"></i>ETF 現金流</h4>
+    <!-- 頂部操作區 -->
+    <div class="top-bar no-print">
+        <div class="container d-flex justify-content-between align-items-center">
+            <h5 class="mb-0 fw-bold text-dark"><i class="fas fa-coins text-success me-2"></i>ETF 現金流</h5>
+            
+            <div class="btn-group">
+                <!-- 手機版只顯示圖示，電腦版顯示文字 -->
+                <button class="btn btn-warning btn-sm fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#summaryModal">
+                    <i class="fas fa-chart-bar"></i><span class="d-none d-sm-inline ms-1">總覽</span>
+                </button>
+                
+                <button class="btn btn-outline-secondary btn-sm shadow-sm ms-1 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="min-width: 250px;">
+                    <li><h6 class="dropdown-header">操作</h6></li>
+                    <li><a class="dropdown-item" href="#" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="fas fa-book me-2 text-primary"></i>使用說明</a></li>
+                    <li><a class="dropdown-item" href="#" @click.prevent="exportCSV"><i class="fas fa-file-csv me-2 text-success"></i>匯出 Excel</a></li>
+                    <li><a class="dropdown-item" href="#" @click.prevent="printPage"><i class="fas fa-print me-2 text-dark"></i>列印 / PDF</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><h6 class="dropdown-header text-danger">清除資料</h6></li>
+                    <li>
+                        <a class="dropdown-item" href="#" @click.prevent="clearMonthDPS">
+                            <i class="fas fa-calendar-day me-2"></i>清除「本月」配息
+                            <br><small class="text-muted ms-4">股數保留</small>
+                        </a>
+                    </li>
+                    <li>
+                        <a class="dropdown-item text-danger" href="#" @click.prevent="clearAnnualDPS">
+                            <i class="fas fa-calendar-alt me-2"></i>清除「整年」配息
+                            <br><small class="text-muted ms-4">股數保留</small>
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
         
-        <div class="btn-group">
-            <!-- 年度總覽 -->
-            <button class="btn btn-warning btn-sm fw-bold me-1" data-bs-toggle="modal" data-bs-target="#summaryModal">
-                <i class="fas fa-chart-bar"></i> 年度總覽
-            </button>
-            
-            <!-- 使用說明 -->
-            <button class="btn btn-outline-primary btn-sm me-1" data-bs-toggle="modal" data-bs-target="#helpModal">
-                <i class="fas fa-book"></i> 說明
-            </button>
-            
-            <!-- 報表按鈕 -->
-            <button class="btn btn-outline-success btn-sm" @click="exportCSV">
-                <i class="fas fa-file-csv"></i> 匯出
-            </button>
-            <button class="btn btn-outline-dark btn-sm" @click="printPage">
-                <i class="fas fa-print"></i> 列印
-            </button>
-            
-            <!-- 清除功能 (下拉選單) -->
-            <button class="btn btn-outline-danger btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                <i class="fas fa-eraser"></i> 清除
-            </button>
-            <ul class="dropdown-menu dropdown-menu-end shadow">
-                <li><h6 class="dropdown-header">僅清除金額 (保留股數)</h6></li>
-                <li>
-                    <a class="dropdown-item" href="#" @click.prevent="clearMonthDPS">
-                        <i class="fas fa-calendar-day me-2"></i>清除「{{ currentMonth }}月」配息
-                    </a>
-                </li>
-                <li><hr class="dropdown-divider"></li>
-                <li>
-                    <a class="dropdown-item text-danger fw-bold" href="#" @click.prevent="clearAnnualDPS">
-                        <i class="fas fa-calendar-alt me-2"></i>清除「整年度」配息
-                        <div class="text-muted small ps-4 fw-normal">1~12月金額全歸零</div>
-                    </a>
-                </li>
-            </ul>
+        <!-- 月份選擇 -->
+        <div class="container mt-2">
+            <div class="month-bar">
+                <button v-for="m in 12" :key="m" 
+                        class="btn month-btn"
+                        :class="{ active: currentMonth === m }"
+                        @click="currentMonth = m">
+                    {{ m }}月
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- 月份選擇列 -->
-    <div class="month-bar no-print">
-        <button v-for="m in 12" :key="m" 
-                class="btn btn-outline-secondary month-btn"
-                :class="{ active: currentMonth === m }"
-                @click="currentMonth = m">
-            {{ m }}月
-        </button>
-    </div>
+    <div class="container">
+        <!-- 列印標題 -->
+        <div class="print-header">
+            <h2>{{ currentMonth }}月份 ETF 領息報表</h2>
+            <p>列印日期：{{ new Date().toLocaleDateString() }}</p>
+        </div>
 
-    <div class="print-header">
-        <h2>{{ currentMonth }}月份 ETF 領息報表</h2>
-        <p>列印日期：{{ new Date().toLocaleDateString() }}</p>
-    </div>
+        <!-- === 電腦版表格 (螢幕大於 768px 顯示) === -->
+        <div class="d-none d-md-block card-table mb-4">
+            <table class="table table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th width="30%">ETF 代號/名稱</th>
+                        <th width="25%">持有股數</th>
+                        <th width="20%">預估配息</th>
+                        <th width="25%">實際入帳</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="etf in filteredList" :key="etf.id" :class="{ 'highlight-row-pc': isHighlight(etf) }">
+                        <td>
+                            <div class="fw-bold fs-5">{{ etf.id }}</div>
+                            <div class="text-muted small">{{ etf.name }}</div>
+                            <div class="mt-1">
+                                <span v-if="etf.freq==='M'" class="badge-m">月配</span>
+                                <span v-else class="badge-q">季配</span>
+                            </div>
+                        </td>
+                        <td>
+                            <input type="number" class="form-control fw-bold text-primary" 
+                                   v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
+                        </td>
+                        <td>
+                            <input type="number" step="0.001" class="form-control fw-bold" 
+                                   v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
+                        </td>
+                        <td class="text-end pe-4">
+                            <div class="fw-bold fs-5 text-success">
+                                {{ calculateAmount(etf.id).toLocaleString() }}
+                            </div>
+                        </td>
+                    </tr>
+                    <tr v-if="filteredList.length === 0">
+                        <td colspan="4" class="text-center py-5 text-muted">本月無入帳款項</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
 
-    <!-- 資料表格 -->
-    <div class="card card-table">
-        <table class="table table-hover mb-0 align-middle">
-            <thead>
-                <tr>
-                    <th width="30%">ETF 代號/名稱</th>
-                    <th width="25%">
-                        持有股數
-                        <small class="d-block fw-normal no-print text-muted" style="font-size:0.7rem">(所有月份連動)</small>
-                    </th>
-                    <th width="20%">
-                        預估配息
-                        <small class="d-block fw-normal no-print text-success" style="font-size:0.7rem">(僅本月)</small>
-                    </th>
-                    <th width="25%">實際入帳金額</th>
-                </tr>
-            </thead>
-            <tbody>
-                <tr v-for="etf in filteredList" :key="etf.id" :class="{ 'highlight-row': isHighlight(etf) }">
-                    <!-- 名稱 -->
-                    <td>
-                        <div class="fw-bold fs-5">{{ etf.id }}</div>
-                        <div class="text-muted small">{{ etf.name }}</div>
-                        <div>
-                            <span v-if="etf.freq==='M'" class="badge-type badge-m">月配</span>
-                            <span v-else class="badge-type badge-q">季配</span>
-                        </div>
-                    </td>
+        <!-- === 手機版卡片清單 (螢幕小於 768px 顯示) === -->
+        <div class="d-md-none">
+            <div v-for="etf in filteredList" :key="etf.id" class="mobile-card" :class="{ 'highlight-card': isHighlight(etf) }">
+                <!-- 卡片標頭 -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div class="d-flex align-items-center">
+                        <div class="fw-bold fs-5 me-2">{{ etf.id }}</div>
+                        <div class="text-secondary small">{{ etf.name }}</div>
+                    </div>
+                    <span v-if="etf.freq==='M'" class="badge-m">月配</span>
+                    <span v-else class="badge-q">季配</span>
+                </div>
 
-                    <!-- 股數 -->
-                    <td>
-                        <input type="number" class="form-control fw-bold text-primary" 
-                               v-model.number="sharesData[etf.id]" 
-                               @input="saveShares" placeholder="0">
-                    </td>
-
-                    <!-- 配息 -->
-                    <td>
-                        <input type="number" step="0.001" class="form-control fw-bold" 
-                               v-model.number="getMonthDps(currentMonth)[etf.id]" 
-                               @input="saveDps" placeholder="0.00">
-                    </td>
-
-                    <!-- 金額 -->
-                    <td class="text-end pe-4">
-                        <div class="fw-bold fs-5 text-success">
+                <!-- 輸入區 -->
+                <div class="row g-2">
+                    <div class="col-4">
+                        <span class="input-label">持有股數</span>
+                        <input type="number" inputmode="numeric" class="form-control fw-bold text-primary px-2" 
+                               v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
+                    </div>
+                    <div class="col-4">
+                        <span class="input-label">預估配息</span>
+                        <input type="number" inputmode="decimal" step="0.001" class="form-control fw-bold px-2" 
+                               v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
+                    </div>
+                    <div class="col-4 text-end">
+                        <span class="input-label">試算金額</span>
+                        <div class="fw-bold fs-5 text-success mt-1">
                             {{ calculateAmount(etf.id).toLocaleString() }}
                         </div>
-                    </td>
-                </tr>
-                <tr v-if="filteredList.length === 0">
-                    <td colspan="4" class="text-center py-5 text-muted">本月無入帳款項</td>
-                </tr>
-            </tbody>
-        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div v-if="filteredList.length === 0" class="text-center py-5 text-muted">
+                <i class="fas fa-coffee fa-2x mb-3 text-secondary opacity-50"></i>
+                <p>本月無入帳款項</p>
+            </div>
+        </div>
+
     </div>
 
     <!-- 底部合計 -->
-    <div class="footer-bar">
+    <div class="footer-bar no-print">
         <div>
-            <span class="badge bg-secondary me-2">{{ currentMonth }}月</span>
-            <span class="d-none d-sm-inline">當月預估入帳</span>
+            <span class="badge bg-light text-dark me-2">{{ currentMonth }}月</span>
+            <span class="total-label">預估入帳</span>
         </div>
         <div class="total-amount">
             NT$ {{ totalAmount.toLocaleString() }}
@@ -209,80 +250,66 @@
     </div>
 
     <!-- 年度總覽 Modal -->
-    <div class="modal fade" id="summaryModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="summaryModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-chart-bar me-2"></i>年度配息總覽</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-warning bg-opacity-10">
+                    <h5 class="modal-title fw-bold text-dark"><i class="fas fa-chart-bar me-2"></i>年度總覽</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <table class="table table-striped mb-0 summary-table text-center">
-                        <thead>
-                            <tr>
-                                <th>月份</th>
-                                <th>預估入帳金額</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="item in yearlySummary" :key="item.month" 
-                                :class="{'summary-row-current': item.month === currentMonth}">
-                                <td>{{ item.month }} 月</td>
-                                <td class="fw-bold text-success">{{ item.total.toLocaleString() }}</td>
-                            </tr>
-                        </tbody>
-                        <tfoot class="table-dark">
-                            <tr>
-                                <td>全年合計</td>
-                                <td>NT$ {{ yearlyTotal.toLocaleString() }}</td>
-                            </tr>
-                        </tfoot>
-                    </table>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                    <div style="max-height: 60vh; overflow-y: auto;">
+                        <table class="table table-striped mb-0 text-center align-middle">
+                            <thead class="sticky-top bg-white">
+                                <tr><th>月份</th><th>預估金額</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in yearlySummary" :key="item.month" 
+                                    :class="{'table-success fw-bold': item.month === currentMonth}">
+                                    <td>{{ item.month }} 月</td>
+                                    <td class="text-success">{{ item.total.toLocaleString() }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="p-3 bg-dark text-white d-flex justify-content-between align-items-center">
+                        <span>全年合計</span>
+                        <span class="fs-4 fw-bold text-warning">NT$ {{ yearlyTotal.toLocaleString() }}</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <!-- 使用說明 Modal -->
-    <div class="modal fade" id="helpModal" tabindex="-1" aria-hidden="true">
+    <div class="modal fade" id="helpModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-light">
-                    <h5 class="modal-title fw-bold"><i class="fas fa-book-open me-2"></i>操作說明</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary bg-opacity-10">
+                    <h5 class="modal-title fw-bold text-primary"><i class="fas fa-book-open me-2"></i>操作說明</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <h5>1. 顯示邏輯 (領息月)</h5>
-                    <ul>
-                        <li>此工具採<strong>「現金入帳月份」</strong>制。</li>
-                        <li><strong>月配 ETF (綠標)</strong>：每個月都會顯示。</li>
-                        <li><strong>季配 ETF (黃底)</strong>：只有在錢進來的月份才會顯示，其餘月份自動隱藏。</li>
+                    <h6 class="text-success fw-bold"><i class="fas fa-calendar-check me-2"></i>顯示邏輯 (領息月)</h6>
+                    <ul class="mb-3 small text-secondary ps-3">
+                        <li><strong>月配 (綠標)</strong>：每月顯示。</li>
+                        <li><strong>季配 (黃底)</strong>：僅在錢入帳月份顯示，其餘隱藏。</li>
                     </ul>
 
-                    <h5>2. 資料輸入</h5>
-                    <ul>
-                        <li><strong>持有股數</strong>：系統已預設您的持股，修改一次，<strong>全年度連動更新</strong>。</li>
-                        <li><strong>預估配息</strong>：預設為 0，請依照該月公告輸入。各月份<strong>獨立設定</strong>，互不影響。</li>
+                    <h6 class="text-success fw-bold"><i class="fas fa-edit me-2"></i>資料輸入</h6>
+                    <ul class="mb-3 small text-secondary ps-3">
+                        <li><strong>股數</strong>：修改一次，全年連動。系統已預填。</li>
+                        <li><strong>配息</strong>：每月獨立。預設為 0，請依公告輸入。</li>
                     </ul>
 
-                    <h5>3. 清除功能 (重要！)</h5>
-                    <ul>
-                        <li><strong>清除「X月」配息</strong>：只把該月份的配息金額歸零。</li>
-                        <li><strong>清除「整年度」配息</strong>：把 1~12 月的金額全歸零。</li>
-                        <li><span class="text-danger fw-bold">注意：</span>上述清除功能<strong>皆會保留您的持有股數</strong>，請放心使用。</li>
-                    </ul>
-                    
-                    <h5>4. 匯出與列印</h5>
-                    <ul>
-                        <li><strong>年度總覽</strong>：點擊上方黃色按鈕，查看整年現金流。</li>
-                        <li><strong>匯出 Excel</strong>：將當月報表下載為 CSV。</li>
+                    <h6 class="text-danger fw-bold"><i class="fas fa-eraser me-2"></i>清除功能</h6>
+                    <ul class="mb-0 small text-secondary ps-3">
+                        <li>可清除「本月」或「整年」的配息金額。</li>
+                        <li><strong>安心保證</strong>：清除功能<span class="text-danger fw-bold">不會</span>刪除您的持有股數。</li>
                     </ul>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">關閉</button>
+                <div class="modal-footer bg-light">
+                    <button type="button" class="btn btn-secondary w-100" data-bs-dismiss="modal">關閉</button>
                 </div>
             </div>
         </div>
@@ -325,7 +352,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
-            // 2. 預設股數 (維持截圖中的資料)
+            // 2. 預設股數
             const defaultShares = {
                 '0056': 6000, '00713': 3011, '00720B': 3000, '00740B': 1000,
                 '00772B': 6334, '00850': 1102, '00878': 7000, '00891': 12029,
@@ -334,8 +361,6 @@
                 '00795B': 1000, '00900': 1000, '009805': 1000, '00922': 2000
             };
 
-            // 3. 預設配息 (已移除，預設為 0)
-            
             const sharesData = ref({}); 
             const dpsData = ref({});
 
@@ -344,8 +369,8 @@
 
             // --- 資料讀寫 ---
             const loadData = () => {
-                // 更新儲存 Key 到 v9_zero (確保沒有舊的預設配息干擾)
-                const savedShares = localStorage.getItem('etf_shares_v9_zero');
+                // Key: v10_mobile (新版本)
+                const savedShares = localStorage.getItem('etf_shares_v10_mobile');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -353,21 +378,21 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v9_zero');
+                const savedDps = localStorage.getItem('etf_dps_v10_mobile');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
-                    // 不做任何預填，讓它保持空白(0)
+                    // 預設為 0 (空白)
                     saveDps();
                 }
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v9_zero', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v10_mobile', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v9_zero', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v10_mobile', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -425,7 +450,7 @@
                 return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
             });
 
-            // --- 匯出與列印 ---
+            // --- 功能區 ---
             const exportCSV = () => {
                 let csvContent = "\uFEFF"; 
                 csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
@@ -454,9 +479,6 @@
                 window.print();
             };
 
-            // --- 清除功能 (股數保留) ---
-            
-            // 1. 清除本月配息
             const clearMonthDPS = () => {
                 if(confirm(`確定要清除「${currentMonth.value}月」的所有配息金額嗎？\n\n(您的持有股數會保留)`)) {
                     dpsData.value[currentMonth.value] = {};
@@ -464,7 +486,6 @@
                 }
             };
 
-            // 2. 清除整年配息
             const clearAnnualDPS = () => {
                 if(confirm("確定要清除「整年度 (1~12月)」所有的配息金額嗎？\n\n(您的「持有股數」會保留，不會被刪除)")) {
                     for(let m=1; m<=12; m++) {
