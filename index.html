@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v24 配發月註解版)</title>
+    <title>ETF 現金流試算 (v25 列印總計版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 -->
@@ -118,7 +118,7 @@
         .amount-cell { text-align: right; padding-right: 8px !important; }
         .amount-text { font-size: 15px; font-weight: 800; color: var(--primary-color); letter-spacing: 0.5px; }
 
-        /* --- 底部合計 --- */
+        /* --- 底部合計 (螢幕顯示用) --- */
         .footer-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(33, 37, 41, 0.98); 
@@ -132,6 +132,9 @@
         .total-amount { font-size: 18px; font-weight: bold; color: #76ff03; }
 
         .print-only-header { display: none; }
+        
+        /* 預設隱藏列印總計列 */
+        .print-total-row { display: none; }
 
         @media print {
             .no-print, .month-bar, .footer-bar, .top-bar { display: none !important; }
@@ -139,6 +142,15 @@
             .container-fluid { max-width: 100%; }
             .custom-table th, .custom-table td { border: 1px solid #000; }
             .input-enhanced { border: none; background: transparent; text-align: right; box-shadow: none; padding: 0; }
+            
+            /* 列印時顯示底部總計列 */
+            .print-total-row { display: table-footer-group !important; }
+            .print-total-row td { 
+                border-top: 2px solid #000 !important; 
+                font-weight: bold; 
+                font-size: 16px;
+                padding-top: 10px;
+            }
         }
     </style>
 </head>
@@ -249,10 +261,17 @@
                     </td>
                 </tr>
             </tbody>
+            <!-- 列印時才顯示的底部總計欄 -->
+            <tfoot class="print-total-row">
+                <tr>
+                    <td colspan="3" style="text-align: right; padding-right: 15px;">本月預估總入帳：</td>
+                    <td style="text-align: right; padding-right: 8px;">NT$ {{ totalAmount.toLocaleString() }}</td>
+                </tr>
+            </tfoot>
         </table>
     </div>
 
-    <!-- 底部合計 -->
+    <!-- 底部合計 (螢幕顯示用) -->
     <div class="footer-bar no-print">
         <div class="d-flex align-items-center">
             <span class="badge bg-light text-dark me-2">{{ currentMonth }}月</span>
@@ -295,7 +314,7 @@
         </div>
     </div>
 
-    <!-- 說明書 Modal (更新內容) -->
+    <!-- 說明書 Modal -->
     <div class="modal fade" id="helpModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
@@ -327,6 +346,7 @@
 
     createApp({
         setup() {
+            // --- 核心邏輯：記憶月份 ---
             const savedMonth = localStorage.getItem('etf_user_last_month');
             const currentMonth = ref(savedMonth ? parseInt(savedMonth) : new Date().getMonth() + 1);
 
@@ -336,6 +356,7 @@
 
             const fileInput = ref(null);
 
+            // ETF 清單設定 (v25)
             const etfConfig = [
                 { id: '0056', name: '元大高股息', freq: 'Q', months: [2,5,8,11] },
                 { id: '00720B', name: '元大投債', freq: 'Q', months: [2,5,8,11] },
@@ -345,6 +366,7 @@
                 { id: '00713', name: '高息低波', freq: 'Q', months: [1,4,7,10] },
                 { id: '00915', name: '凱基高息', freq: 'Q', months: [1,4,7,10] },
                 { id: '00900', name: '富邦特選', freq: 'M', months: [] },
+                // 00795B 移除
                 { id: '009805', name: '新光美國電力', freq: 'M', months: [] },
                 { id: '00922', name: '國泰領袖50', freq: 'M', months: [] },
                 { id: '00740B', name: '全球投債', freq: 'M', months: [] },
@@ -358,6 +380,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
+            // 預設股數 (00915=6000)
             const defaultShares = {
                 '0056': 6000, 
                 '00713': 3038, 
@@ -386,8 +409,8 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v24 (最新版本)
-                const savedShares = localStorage.getItem('etf_shares_v24');
+                // Key: v25 (版本更新)
+                const savedShares = localStorage.getItem('etf_shares_v25');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -395,7 +418,7 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v24');
+                const savedDps = localStorage.getItem('etf_dps_v25');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
@@ -404,11 +427,11 @@
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v24', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v25', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v24', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v25', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -465,6 +488,7 @@
                 return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
             });
 
+            // --- 功能區 ---
             const exportCSV = () => {
                 let csvContent = "\uFEFF"; 
                 csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
@@ -498,7 +522,7 @@
                     shares: sharesData.value,
                     dps: dpsData.value,
                     timestamp: new Date().toISOString(),
-                    version: 'v24'
+                    version: 'v25'
                 };
                 const jsonString = JSON.stringify(backup, null, 2);
                 const blob = new Blob([jsonString], { type: "application/json" });
