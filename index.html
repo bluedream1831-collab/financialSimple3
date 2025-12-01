@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v22 移除00795B)</title>
+    <title>ETF 現金流試算 (v23 最新股數版)</title>
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <!-- Bootstrap 5 -->
@@ -330,14 +330,13 @@
             const savedMonth = localStorage.getItem('etf_user_last_month');
             const currentMonth = ref(savedMonth ? parseInt(savedMonth) : new Date().getMonth() + 1);
 
-            // 監聽月份變化，隨時存檔
             watch(currentMonth, (newVal) => {
                 localStorage.setItem('etf_user_last_month', newVal);
             });
 
             const fileInput = ref(null);
 
-            // ETF 清單設定 (移除 00795B)
+            // ETF 清單設定 (v22: 移除 00795B)
             const etfConfig = [
                 { id: '0056', name: '元大高股息', freq: 'Q', months: [2,5,8,11] },
                 { id: '00720B', name: '元大投債', freq: 'Q', months: [2,5,8,11] },
@@ -347,7 +346,7 @@
                 { id: '00713', name: '高息低波', freq: 'Q', months: [1,4,7,10] },
                 { id: '00915', name: '凱基高息', freq: 'Q', months: [1,4,7,10] },
                 { id: '00900', name: '富邦特選', freq: 'M', months: [] },
-                // 00795B 已移除
+                // 00795B 移除
                 { id: '009805', name: '新光美國電力', freq: 'M', months: [] },
                 { id: '00922', name: '國泰領袖50', freq: 'M', months: [] },
                 { id: '00740B', name: '全球投債', freq: 'M', months: [] },
@@ -361,7 +360,7 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
-            // 預設股數 (00795B 移除 / 00891=12000 / 00850=1000)
+            // 預設股數 (00915=6000)
             const defaultShares = {
                 '0056': 6000, 
                 '00713': 3038, 
@@ -371,7 +370,7 @@
                 '00850': 1000, 
                 '00878': 7000, 
                 '00891': 12000, 
-                '00915': 5000, 
+                '00915': 6000, // v23 updated: 5000 -> 6000
                 '00929': 3000, 
                 '00934': 1000, 
                 '00936': 6000,
@@ -379,7 +378,6 @@
                 '00940': 3000, 
                 '00950B': 10000, 
                 '00959B': 5000,
-                // '00795B': 1000,  // Removed
                 '00900': 1000, 
                 '009805': 1000, 
                 '00922': 2000
@@ -391,8 +389,8 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v22 (版本更新)
-                const savedShares = localStorage.getItem('etf_shares_v22');
+                // Key: v23 (版本更新)
+                const savedShares = localStorage.getItem('etf_shares_v23');
                 if(savedShares) {
                     sharesData.value = JSON.parse(savedShares);
                 } else {
@@ -400,7 +398,7 @@
                     saveShares();
                 }
 
-                const savedDps = localStorage.getItem('etf_dps_v22');
+                const savedDps = localStorage.getItem('etf_dps_v23');
                 if(savedDps) {
                     dpsData.value = JSON.parse(savedDps);
                 } else {
@@ -409,11 +407,11 @@
             };
 
             const saveShares = () => {
-                localStorage.setItem('etf_shares_v22', JSON.stringify(sharesData.value));
+                localStorage.setItem('etf_shares_v23', JSON.stringify(sharesData.value));
             };
 
             const saveDps = () => {
-                localStorage.setItem('etf_dps_v22', JSON.stringify(dpsData.value));
+                localStorage.setItem('etf_dps_v23', JSON.stringify(dpsData.value));
             };
 
             const getMonthDps = (m) => {
@@ -504,7 +502,7 @@
                     shares: sharesData.value,
                     dps: dpsData.value,
                     timestamp: new Date().toISOString(),
-                    version: 'v22'
+                    version: 'v23'
                 };
                 const jsonString = JSON.stringify(backup, null, 2);
                 const blob = new Blob([jsonString], { type: "application/json" });
