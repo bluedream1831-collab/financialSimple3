@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ETF 現金流試算 (v25 列印總計版)</title>
+    <title>ETF 現金流試算 (v26 圖表視覺化)</title>
+    
     <!-- Vue.js 3 -->
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <!-- Chart.js (新增：圖表功能) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome -->
@@ -77,10 +80,8 @@
             height: 46px;
         }
 
-        /* 黃底 */
         .highlight-row { background-color: var(--highlight-bg) !important; }
 
-        /* ETF 名稱區塊 */
         .etf-info-cell { text-align: left; padding-left: 8px !important; }
         .etf-info-wrapper {
             display: flex; flex-direction: column; justify-content: center; line-height: 1.2;
@@ -88,7 +89,6 @@
         .etf-code { font-weight: 800; font-size: 14px; color: #2c3e50; }
         .etf-name { font-size: 11px; color: #666; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px;}
 
-        /* 標籤 */
         .badge-pill { 
             display: inline-block; padding: 1px 4px; border-radius: 3px; 
             font-size: 10px; line-height: 1; margin-left: 4px; vertical-align: text-top;
@@ -96,7 +96,7 @@
         .badge-m { background-color: #d1e7dd; color: #0f5132; border: 1px solid #badbcc; } 
         .badge-q { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
 
-        /* 輸入框顯眼化 */
+        /* 輸入框 */
         .input-enhanced {
             width: 100%; 
             text-align: right;
@@ -118,7 +118,7 @@
         .amount-cell { text-align: right; padding-right: 8px !important; }
         .amount-text { font-size: 15px; font-weight: 800; color: var(--primary-color); letter-spacing: 0.5px; }
 
-        /* --- 底部合計 (螢幕顯示用) --- */
+        /* --- 底部合計 --- */
         .footer-bar {
             position: fixed; bottom: 0; left: 0; width: 100%;
             background: rgba(33, 37, 41, 0.98); 
@@ -133,7 +133,6 @@
 
         .print-only-header { display: none; }
         
-        /* 預設隱藏列印總計列 */
         .print-total-row { display: none; }
 
         @media print {
@@ -142,8 +141,6 @@
             .container-fluid { max-width: 100%; }
             .custom-table th, .custom-table td { border: 1px solid #000; }
             .input-enhanced { border: none; background: transparent; text-align: right; box-shadow: none; padding: 0; }
-            
-            /* 列印時顯示底部總計列 */
             .print-total-row { display: table-footer-group !important; }
             .print-total-row td { 
                 border-top: 2px solid #000 !important; 
@@ -169,13 +166,13 @@
                 </div>
                 
                 <div class="btn-group">
-                    <button class="btn btn-warning btn-sm py-1 px-3 fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#summaryModal" style="font-size: 12px;">
-                        <i class="fas fa-chart-pie me-1"></i>總覽
+                    <!-- 點擊觸發圖表更新 -->
+                    <button class="btn btn-warning btn-sm py-1 px-3 fw-bold shadow-sm" @click="openSummary" style="font-size: 12px;">
+                        <i class="fas fa-chart-bar me-1"></i>總覽
                     </button>
                     <button class="btn btn-outline-secondary btn-sm py-1 px-3 ms-2 dropdown-toggle shadow-sm" type="button" data-bs-toggle="dropdown" style="font-size: 12px;">
                         功能
                     </button>
-                    <!-- 下拉選單 -->
                     <ul class="dropdown-menu dropdown-menu-end shadow border-0" style="font-size: 13px;">
                         <li><a class="dropdown-item py-2" href="#" data-bs-toggle="modal" data-bs-target="#helpModal"><i class="fas fa-book me-2 text-primary"></i>操作說明</a></li>
                         <li><hr class="dropdown-divider my-1"></li>
@@ -203,10 +200,8 @@
         </div>
     </div>
 
-    <!-- 隱藏匯入 -->
     <input type="file" ref="fileInput" @change="handleFileImport" accept=".json" style="display: none;">
 
-    <!-- 主要內容區 -->
     <div class="container-fluid">
         <h3 class="print-only-header">{{ currentMonth }}月份 ETF 領息報表</h3>
 
@@ -221,7 +216,6 @@
             </thead>
             <tbody>
                 <tr v-for="etf in filteredList" :key="etf.id" :class="{ 'highlight-row': isHighlight(etf) }">
-                    <!-- 代號與名稱 -->
                     <td class="etf-info-cell">
                         <div class="etf-info-wrapper">
                             <div>
@@ -232,36 +226,26 @@
                             <div class="etf-name">{{ etf.name }}</div>
                         </div>
                     </td>
-                    
-                    <!-- 股數輸入 -->
                     <td>
                         <input type="number" class="input-enhanced" 
                                v-model.number="sharesData[etf.id]" @input="saveShares" placeholder="0">
                     </td>
-                    
-                    <!-- 配息輸入 -->
                     <td>
                         <input type="number" step="0.001" class="input-enhanced" 
                                v-model.number="getMonthDps(currentMonth)[etf.id]" @input="saveDps" placeholder="0">
                     </td>
-                    
-                    <!-- 金額 -->
                     <td class="amount-cell">
                         <div class="amount-text">
                             {{ calculateAmount(etf.id).toLocaleString() }}
                         </div>
                     </td>
                 </tr>
-                
-                <!-- 無資料時顯示 -->
                 <tr v-if="filteredList.length === 0">
                     <td colspan="4" class="text-center text-muted py-5">
-                        <i class="fas fa-mug-hot fa-2x mb-2 text-secondary opacity-50"></i><br>
-                        本月無入帳款項
+                        <i class="fas fa-mug-hot fa-2x mb-2 text-secondary opacity-50"></i><br>本月無入帳款項
                     </td>
                 </tr>
             </tbody>
-            <!-- 列印時才顯示的底部總計欄 -->
             <tfoot class="print-total-row">
                 <tr>
                     <td colspan="3" style="text-align: right; padding-right: 15px;">本月預估總入帳：</td>
@@ -271,7 +255,7 @@
         </table>
     </div>
 
-    <!-- 底部合計 (螢幕顯示用) -->
+    <!-- 底部合計 -->
     <div class="footer-bar no-print">
         <div class="d-flex align-items-center">
             <span class="badge bg-light text-dark me-2">{{ currentMonth }}月</span>
@@ -282,16 +266,22 @@
         </div>
     </div>
 
-    <!-- 年度總覽 Modal -->
-    <div class="modal fade" id="summaryModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+    <!-- 年度總覽 Modal (包含圖表) -->
+    <div class="modal fade" id="summaryModal" tabindex="-1" ref="summaryModalRef">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content border-0 shadow">
                 <div class="modal-header bg-warning bg-opacity-25 py-2">
-                    <h6 class="modal-title fw-bold text-dark"><i class="fas fa-chart-pie me-2"></i>年度總覽</h6>
+                    <h6 class="modal-title fw-bold text-dark"><i class="fas fa-chart-pie me-2"></i>年度配息總覽</h6>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="modal-body p-0">
-                    <div style="max-height: 50vh; overflow-y: auto;">
+                <div class="modal-body p-3">
+                    <!-- 圖表區 -->
+                    <div style="height: 200px; margin-bottom: 15px;">
+                        <canvas id="yearlyChart"></canvas>
+                    </div>
+
+                    <!-- 表格區 -->
+                    <div style="max-height: 40vh; overflow-y: auto; border-top: 1px solid #eee;">
                         <table class="table table-sm table-striped mb-0 text-center align-middle" style="font-size:13px;">
                             <thead class="sticky-top bg-white">
                                 <tr><th>月份</th><th>金額</th></tr>
@@ -324,11 +314,11 @@
                 </div>
                 <div class="modal-body small">
                     <ul class="ps-3 mb-0">
-                        <li class="mb-2"><strong>顯示邏輯</strong>：本工具採<strong>「配發月 (現金入帳)」</strong>制，<span class="text-danger fw-bold">非除息月</span>。</li>
-                        <li class="mb-2"><strong>記憶月份</strong>：系統會自動記住您最後瀏覽的月份。</li>
-                        <li class="mb-1"><strong>黃底</strong>：代表本月有領息的季配 ETF。</li>
-                        <li class="mb-1"><strong>股數</strong>：連動所有月份，改一次全部更新。</li>
-                        <li class="mb-1"><strong>配息</strong>：每月獨立輸入。</li>
+                        <li class="mb-2"><strong>年度圖表</strong>：點擊「總覽」可查看長條圖統計。</li>
+                        <li class="mb-2"><strong>顯示邏輯</strong>：本工具採「配發月 (現金入帳)」制。</li>
+                        <li class="mb-1"><strong>記憶月份</strong>：自動記住最後瀏覽的月份。</li>
+                        <li class="mb-1"><strong>股數</strong>：連動更新。</li>
+                        <li class="mb-1"><strong>配息</strong>：每月獨立。</li>
                         <li>清除功能<strong>不會</strong>刪除您的股數。</li>
                     </ul>
                 </div>
@@ -338,23 +328,24 @@
 
 </div>
 
-<!-- Bootstrap JS -->
+<!-- Bootstrap JS Bundle -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <script>
-    const { createApp, reactive, ref, computed, onMounted, watch } = Vue;
+    const { createApp, reactive, ref, computed, onMounted, watch, nextTick } = Vue;
 
     createApp({
         setup() {
-            // --- 核心邏輯：記憶月份 ---
+            // --- 狀態管理 ---
             const savedMonth = localStorage.getItem('etf_user_last_month');
             const currentMonth = ref(savedMonth ? parseInt(savedMonth) : new Date().getMonth() + 1);
+            const fileInput = ref(null);
+            let myChart = null; // 圖表實例
+            let bootstrapModal = null; // Modal 實例
 
             watch(currentMonth, (newVal) => {
                 localStorage.setItem('etf_user_last_month', newVal);
             });
-
-            const fileInput = ref(null);
 
             // ETF 清單設定 (v25)
             const etfConfig = [
@@ -366,7 +357,6 @@
                 { id: '00713', name: '高息低波', freq: 'Q', months: [1,4,7,10] },
                 { id: '00915', name: '凱基高息', freq: 'Q', months: [1,4,7,10] },
                 { id: '00900', name: '富邦特選', freq: 'M', months: [] },
-                // 00795B 移除
                 { id: '009805', name: '新光美國電力', freq: 'M', months: [] },
                 { id: '00922', name: '國泰領袖50', freq: 'M', months: [] },
                 { id: '00740B', name: '全球投債', freq: 'M', months: [] },
@@ -380,27 +370,12 @@
                 { id: '00772B', name: '中信高評級', freq: 'M', months: [] },
             ];
 
-            // 預設股數 (00915=6000)
             const defaultShares = {
-                '0056': 6000, 
-                '00713': 3038, 
-                '00720B': 3000, 
-                '00740B': 1000,
-                '00772B': 6369, 
-                '00850': 1000, 
-                '00878': 7000, 
-                '00891': 12000, 
-                '00915': 6000, 
-                '00929': 3000, 
-                '00934': 1000, 
-                '00936': 6000,
-                '00939': 5000, 
-                '00940': 3000, 
-                '00950B': 10000, 
-                '00959B': 5000,
-                '00900': 1000, 
-                '009805': 1000, 
-                '00922': 2000
+                '0056': 6000, '00713': 3038, '00720B': 3000, '00740B': 1000,
+                '00772B': 6369, '00850': 1000, '00878': 7000, '00891': 12000,
+                '00915': 6000, '00929': 3000, '00934': 1000, '00936': 6000,
+                '00939': 5000, '00940': 3000, '00950B': 10000, '00959B': 5000,
+                '00900': 1000, '009805': 1000, '00922': 2000
             };
 
             const sharesData = ref({}); 
@@ -409,21 +384,13 @@
             for(let m=1; m<=12; m++) dpsData.value[m] = {};
 
             const loadData = () => {
-                // Key: v25 (版本更新)
                 const savedShares = localStorage.getItem('etf_shares_v25');
-                if(savedShares) {
-                    sharesData.value = JSON.parse(savedShares);
-                } else {
-                    sharesData.value = { ...defaultShares }; 
-                    saveShares();
-                }
+                if(savedShares) sharesData.value = JSON.parse(savedShares);
+                else { sharesData.value = { ...defaultShares }; saveShares(); }
 
                 const savedDps = localStorage.getItem('etf_dps_v25');
-                if(savedDps) {
-                    dpsData.value = JSON.parse(savedDps);
-                } else {
-                    saveDps();
-                }
+                if(savedDps) dpsData.value = JSON.parse(savedDps);
+                else saveDps();
             };
 
             const saveShares = () => {
@@ -488,12 +455,74 @@
                 return yearlySummary.value.reduce((sum, item) => sum + item.total, 0);
             });
 
-            // --- 功能區 ---
+            // --- 圖表功能 ---
+            const openSummary = () => {
+                // 手動呼叫 Bootstrap Modal
+                if(!bootstrapModal) {
+                    bootstrapModal = new bootstrap.Modal(document.getElementById('summaryModal'));
+                }
+                bootstrapModal.show();
+                
+                // 等待 DOM 更新後繪製圖表
+                nextTick(() => {
+                    renderChart();
+                });
+            };
+
+            const renderChart = () => {
+                const ctx = document.getElementById('yearlyChart');
+                if(!ctx) return;
+
+                if (myChart) myChart.destroy(); // 銷毀舊圖表
+
+                // 準備數據：高亮當前月份
+                const bgColors = yearlySummary.value.map(item => 
+                    item.month === currentMonth.value ? '#ffc107' : '#198754' // 黃色 vs 綠色
+                );
+
+                myChart = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: yearlySummary.value.map(i => i.month + '月'),
+                        datasets: [{
+                            label: '預估入帳 (NT$)',
+                            data: yearlySummary.value.map(i => i.total),
+                            backgroundColor: bgColors,
+                            borderRadius: 4,
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return ' NT$ ' + context.raw.toLocaleString();
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: { color: '#f0f0f0' }
+                            },
+                            x: {
+                                grid: { display: false }
+                            }
+                        }
+                    }
+                });
+            };
+
+            // --- 匯出匯入 ---
             const exportCSV = () => {
                 let csvContent = "\uFEFF"; 
                 csvContent += `${currentMonth.value}月份 ETF 領息試算表\n`;
                 csvContent += "代號,名稱,類型,持有股數,配息金額,入帳試算\n";
-
                 filteredList.value.forEach(etf => {
                     const s = sharesData.value[etf.id] || 0;
                     const d = (dpsData.value[currentMonth.value]?.[etf.id]) || 0;
@@ -502,7 +531,6 @@
                     csvContent += `${etf.id},${etf.name},${type},${s},${d},${amt}\n`;
                 });
                 csvContent += `,,,Total,,${totalAmount.value}\n`;
-
                 const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
                 const link = document.createElement("a");
                 const url = URL.createObjectURL(blob);
@@ -513,9 +541,7 @@
                 document.body.removeChild(link);
             };
 
-            const printPage = () => {
-                window.print();
-            };
+            const printPage = () => { window.print(); };
 
             const backupDataJSON = () => {
                 const backup = {
@@ -535,9 +561,7 @@
                 document.body.removeChild(link);
             };
 
-            const triggerImport = () => {
-                fileInput.value.click();
-            };
+            const triggerImport = () => { fileInput.value.click(); };
 
             const handleFileImport = (event) => {
                 const file = event.target.files[0];
@@ -554,9 +578,7 @@
                                 saveDps();
                                 alert("匯入成功！");
                             }
-                        } else {
-                            alert("格式不正確。");
-                        }
+                        } else { alert("格式不正確。"); }
                     } catch (err) { alert("無法解析檔案。"); }
                     event.target.value = '';
                 };
@@ -572,9 +594,7 @@
 
             const clearAnnualDPS = () => {
                 if(confirm("確定要清除「整年度 (1~12月)」所有的配息金額嗎？\n\n(股數會保留)")) {
-                    for(let m=1; m<=12; m++) {
-                        dpsData.value[m] = {};
-                    }
+                    for(let m=1; m<=12; m++) dpsData.value[m] = {};
                     saveDps();
                     alert("已清除配息金額");
                 }
@@ -590,7 +610,8 @@
                 calculateAmount, totalAmount,
                 yearlySummary, yearlyTotal,
                 exportCSV, printPage, clearMonthDPS, clearAnnualDPS,
-                backupDataJSON, triggerImport, handleFileImport, fileInput
+                backupDataJSON, triggerImport, handleFileImport, fileInput,
+                openSummary // 回傳給按鈕使用
             };
         }
     }).mount('#app');
